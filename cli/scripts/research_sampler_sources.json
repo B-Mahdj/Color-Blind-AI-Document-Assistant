@@ -1,0 +1,1201 @@
+{
+  "title": "Color accessibility - Research sample",
+  "date": "24 October 2026",
+  "sources": [
+    {
+      "id": "S01",
+      "title": "Complexation spectra",
+      "credit": "Alexandra Caudron, Université Lille 1, 2004",
+      "url": "https://pepite-depot.univ-lille.fr/LIBRE/Th_Num/2004/50376-2004-Caudron.pdf",
+      "file": "output/pdf/science-research/caudron-2004.pdf",
+      "note": ""
+    },
+    {
+      "id": "S02",
+      "title": "Agrégation interne de physique-chimie",
+      "credit": "Ministère de l'Éducation nationale, session 2025",
+      "url": "https://www.devenirenseignant.gouv.fr/media/15269/download",
+      "file": "output/pdf/science-research/agregation-chimie-2025.pdf",
+      "note": ""
+    },
+    {
+      "id": "S03",
+      "title": "Concours G2E - Chimie",
+      "credit": "Concours G2E, session 2020",
+      "url": "https://concoursg2e.univ-lorraine.fr/wp-content/uploads/2021/12/CHIMIE-2020.pdf",
+      "file": "output/pdf/science-research/g2e-chimie-2020.pdf",
+      "note": ""
+    },
+    {
+      "id": "S04",
+      "title": "Solutions colorées",
+      "credit": "Prof Grasset, classroom exercises, 2018",
+      "url": "https://profgrasset.wordpress.com/wp-content/uploads/2018/10/exos-ds-solutions-colorees-2018.pdf",
+      "file": "output/pdf/science-research/solutions-colorees-exercices.pdf",
+      "note": ""
+    },
+    {
+      "id": "S05",
+      "title": "Point isobestique en spectroscopie",
+      "credit": "LaChimie.fr, teaching resource",
+      "url": "https://www.lachimie.fr/analytique/uv/point-isobestique.php",
+      "file": "output/pdf/research-sampler-sources/bbt-spectra.jpg",
+      "note": "Web figure; original labels and image resolution retained."
+    },
+    {
+      "id": "S06",
+      "title": "Influence de la dilution sur un dosage",
+      "credit": "PhysiqueChimieLycee.com, teaching resource",
+      "url": "https://physiquechimielycee.com/scphysiques18/ts02ch20dil.htm",
+      "file": "output/pdf/research-sampler-sources/dilution-ph.jpg",
+      "note": "Legacy web figures; lower source resolution."
+    },
+    {
+      "id": "S07",
+      "title": "Scaling-specific features of a gene regulatory network",
+      "credit": "Wu, Manu, Jiao and Ma, Nature Communications 6:10031, 2015",
+      "url": "https://www.nature.com/articles/ncomms10031.pdf",
+      "file": "output/pdf/science-research/drosophila-ncomms10031.pdf",
+      "note": "CC BY 4.0. Figures cropped and resized."
+    },
+    {
+      "id": "S08",
+      "title": "Axe antéro-postérieur chez la drosophile",
+      "credit": "Patrick Pla, Université Paris-Saclay, BCG Développement",
+      "url": "https://bcgdevelop.fr/axe-antero-posterieur-chez-la-drosophile/",
+      "file": "output/pdf/research-sampler-sources/drosophila-lesson.jpg",
+      "note": "Teaching presentation of the gene profiles from Wu et al. (S07)."
+    },
+    {
+      "id": "S09",
+      "title": "Génétique des populations - Master GEB",
+      "credit": "Hervé Perdry, course notes",
+      "url": "https://genostats.github.io/herve.perdry/gen_pop.pdf",
+      "file": "cli/output/pdf/svt-research/perdry-genetique-populations.pdf",
+      "note": ""
+    },
+    {
+      "id": "S10",
+      "title": "Mécanismes de l'évolution - Prépa TB",
+      "credit": "Tanguy Jean, SVT teaching handout",
+      "url": "https://www.svt-tanguy-jean.com/uploads/1/2/0/4/120408978/tb-21-evolution-fiche.pdf",
+      "file": "cli/output/pdf/svt-research/tb-evolution-fiche.pdf",
+      "note": ""
+    },
+    {
+      "id": "S11",
+      "title": "Bac S, spécialité SVT - Photosynthèse",
+      "credit": "Centres étrangers, session 2016",
+      "url": "https://www.sujetdebac.fr/annales-pdf/2016/s-svt-specialite-2016-centres-etrangers-sujet-officiel.pdf",
+      "file": "cli/output/pdf/svt-research/bac-2016-photosynthese.pdf",
+      "note": ""
+    },
+    {
+      "id": "S12",
+      "title": "Sujet zéro SVT - Diabète",
+      "credit": "Éduscol; hosted by Académie de Besançon",
+      "url": "https://svt.ac-besancon.fr/wp-content/uploads/sites/104/2016/02/Annale0_SVT_SerieS-speSVT_Partie2-2-exemple2_v2_221107.pdf",
+      "file": "cli/output/pdf/svt-research/besancon-diabete.pdf",
+      "note": "Additional document inspected during the French SVT search."
+    },
+    {
+      "id": "S13",
+      "title": "Climat - Cours élève",
+      "credit": "Académie de Versailles, SVT teaching material",
+      "url": "https://svt.ac-versailles.fr/IMG/pdf/cours_eleve_1.pdf",
+      "file": "cli/tmp/pdfs/svt-france/versailles-climat.pdf",
+      "note": "Additional document inspected during the French SVT search."
+    },
+    {
+      "id": "S14",
+      "title": "From Alleles to Answers - Imaging",
+      "credit": "University of Utah, Genetic Science Learning Center, 2024",
+      "url": "https://learn-genetics.b-cdn.net/gentech/From%20Alleles%20To%20Answers_imaging.pdf",
+      "file": "cli/tmp/pdfs/science-learning-research/utah-from-alleles-imaging.pdf",
+      "note": ""
+    },
+    {
+      "id": "S15",
+      "title": "Microarray Technology",
+      "credit": "MIT OpenCourseWare, 7.90J, Spring 2005, lecture 5",
+      "url": "https://ocw.mit.edu/courses/7-90j-computational-functional-genomics-spring-2005/b06403228be6bdca6e7cff1e1ed07375_lecture_5.pdf",
+      "file": "cli/tmp/pdfs/science-learning-research/mit-microarray-lecture.pdf",
+      "note": ""
+    },
+    {
+      "id": "S16",
+      "title": "Genome-wide expression patterns",
+      "credit": "Eisen, Spellman, Brown and Botstein, PNAS 95:14863-14868, 1998",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC24541/",
+      "file": "output/pdf/research-sampler-sources/eisen-figure2.jpg",
+      "note": "Figure 2 from the online color version; the scanned PDF was monochrome."
+    },
+    {
+      "id": "S17",
+      "title": "STAT 555 - 10.3 Heatmaps",
+      "credit": "Penn State, online statistics course",
+      "url": "https://online.stat.psu.edu/stat555/node/87/",
+      "file": "output/pdf/research-sampler-sources/psu-heatmap.png",
+      "note": "Correlation-distance heatmap. Original web image: 400 x 379 pixels."
+    },
+    {
+      "id": "S18",
+      "title": "Visual Genomics Analysis Studio",
+      "credit": "Hertzman et al., Frontiers in Genetics 12:642012, 2021",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8247644/",
+      "file": "output/pdf/research-sampler-sources/vgas-figure8.jpg",
+      "note": "CC BY. Figure 8, reproduced from the online article."
+    },
+    {
+      "id": "S19",
+      "title": "The misuse of colour in science communication",
+      "credit": "Crameri, Shephard and Heron, Nature Communications 11:5444, 2020",
+      "url": "https://www.nature.com/articles/s41467-020-19160-7.pdf",
+      "file": "cli/tmp/pdfs/science-learning-research/misuse-of-colour-in-science.pdf",
+      "note": "CC BY 4.0. Figure 2 is an existing simulation comparison."
+    },
+    {
+      "id": "S20",
+      "title": "An Introduction to Statistical Learning, second edition",
+      "credit": "James, Witten, Hastie and Tibshirani, corrected 2023 edition",
+      "url": "https://www.statlearning.com/",
+      "file": "cli/tmp/pdfs/science-learning-research/islr-second-edition.pdf",
+      "note": "Additional textbook inspected during the science/learning search."
+    },
+    {
+      "id": "S21",
+      "title": "IREX III - Performance of Iris Identification Algorithms",
+      "credit": "NISTIR 7836, 2012",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ir/2012/NIST.IR.7836.pdf",
+      "file": "cli/tmp/pdfs/official-reports-research/nist-irex-iii-7836.pdf",
+      "note": ""
+    },
+    {
+      "id": "S22",
+      "title": "Studies of Fingerprint Matching Using the NIST Verification Test Bed",
+      "credit": "NISTIR 7020, 2003",
+      "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7020.pdf",
+      "file": "cli/tmp/pdfs/official-reports-research/nist-fingerprint-7020.pdf",
+      "note": ""
+    },
+    {
+      "id": "S23",
+      "title": "NCD country comparisons - Supporting material",
+      "credit": "OECD, 2026",
+      "url": "https://www.oecd.org/content/dam/oecd/en/publications/support-materials/2026/05/cluster-analysis-of-non-communicable-disease-burden-prevention-and-management-across-eu27-2-countries_51273324/Support-Material-Clustering-NCDS-Annex-Final.pdf",
+      "file": "cli/tmp/pdfs/official-reports-research/oecd-ncd-2026.pdf",
+      "note": ""
+    },
+    {
+      "id": "S24",
+      "title": "Financial Stability Review, second edition",
+      "credit": "South African Reserve Bank, November 2024",
+      "url": "https://www.resbank.co.za/content/dam/sarb/publications/reviews/finstab-review/2024/financial-stability-review/november-2024/Second%20Edition%202024%20Financial%20Stability%20Review_Final_.pdf",
+      "file": "output/pdf/research-sampler-sources/sarb.pdf",
+      "note": ""
+    },
+    {
+      "id": "S25",
+      "title": "European State of the Climate 2024",
+      "credit": "Copernicus Climate Change Service and WMO, 2025",
+      "url": "https://climate.copernicus.eu/sites/default/files/custom-uploads/ESOTC-2024/press-resources/ESOTC-2024-report.pdf",
+      "file": "cli/tmp/pdfs/official-reports-research/copernicus-esotc-2024.pdf",
+      "note": ""
+    },
+    {
+      "id": "S26",
+      "title": "Annual soil moisture anomalies - Figure 8.1a",
+      "credit": "ESOTC 2024; ERA5-Land; C3S/ECMWF",
+      "url": "https://climate.copernicus.eu/esotc/2024/graphics-gallery/soil-moisture",
+      "file": "output/pdf/research-sampler-sources/soil-annual.png",
+      "note": "Publisher PNG version of the map supplied by the user."
+    },
+    {
+      "id": "S27",
+      "title": "Monthly soil moisture anomalies - Figure S8.4",
+      "credit": "ESOTC 2024; ERA5-Land; C3S/ECMWF",
+      "url": "https://climate.copernicus.eu/esotc/2024/graphics-gallery/soil-moisture",
+      "file": "output/pdf/research-sampler-sources/soil-monthly.png",
+      "note": "Publisher PNG used instead of the 520 MB high-resolution PDF."
+    },
+    {
+      "id": "S28",
+      "title": "Soil moisture extremes - Figure 8.2",
+      "credit": "ESOTC 2024; C3S/ECMWF/TU Wien",
+      "url": "https://climate.copernicus.eu/sites/default/files/custom-uploads/ESOTC-2024/soil-moisture/fig08.2/fig08.2_ESOTC2024_Soil_Moisture_Extremes_time_series_Areas1-6.pdf",
+      "file": "output/pdf/research-sampler-sources/soil-extremes.pdf",
+      "note": ""
+    },
+    {
+      "id": "S29",
+      "title": "Monthly river flow - Figure 9.3",
+      "credit": "ESOTC 2024; EFAS; CEMS/C3S/ECMWF",
+      "url": "https://climate.copernicus.eu/sites/default/files/custom-uploads/ESOTC-2024/river-flow/fig09.3/fig09.3_ESOTC_2024_River_flow_monthly_map_EFAS5.pdf",
+      "file": "output/pdf/research-sampler-sources/river-monthly.pdf",
+      "note": ""
+    },
+    {
+      "id": "S30",
+      "title": "Climate Change 2021 - The Physical Science Basis, Chapter 4",
+      "credit": "IPCC, Sixth Assessment Report, Working Group I",
+      "url": "https://www.ipcc.ch/report/ar6/wg1/downloads/report/IPCC_AR6_WGI_Chapter04.pdf",
+      "file": "cli/tmp/pdfs/official-reports-research/ipcc-ar6-wgi-ch04.pdf",
+      "note": ""
+    },
+    {
+      "id": "S31",
+      "title": "Luas Performance Report - Quarter 2",
+      "credit": "National Transport Authority / Transport Infrastructure Ireland, 2015",
+      "url": "https://www.nationaltransport.ie/wp-content/uploads/2011/12/Luas_Performance_Report_Q2_20151.pdf",
+      "file": "cli/tmp/pdfs/demo-matches/luas-2015.pdf",
+      "note": ""
+    },
+    {
+      "id": "S32",
+      "title": "Luas Performance Report - Quarter 4",
+      "credit": "National Transport Authority / Transport Infrastructure Ireland, 2023",
+      "url": "https://www.nationaltransport.ie/wp-content/uploads/2024/06/Luas-Performance-Report-Q4_2023.pdf",
+      "file": "cli/tmp/pdfs/demo-matches/luas-2023.pdf",
+      "note": "Additional report inspected while finding matches to the demo."
+    },
+    {
+      "id": "S33",
+      "title": "How to Make Learning Visible through Technology: eDia",
+      "credit": "Molnár and Csapó, CSEDU 2019, volume 2",
+      "url": "https://publicatio.bibl.u-szeged.hu/15258/1/CSEDU_2019_Volume_2-1_Molnar-Csapo.pdf",
+      "file": "cli/tmp/pdfs/demo-matches/edia-learning.pdf",
+      "note": ""
+    },
+    {
+      "id": "S34",
+      "title": "Performance Dashboards - Quarter 4, 2024/25",
+      "credit": "Mid Devon District Council",
+      "url": "https://www.middevon.gov.uk/media/357577/performance-dashboards-2024_25_q4.pdf",
+      "file": "cli/tmp/pdfs/demo-matches/middevon-dashboard.pdf",
+      "note": ""
+    },
+    {
+      "id": "S35",
+      "title": "Integrated Performance Report - Month 2",
+      "credit": "Oxford University Hospitals, May 2024",
+      "url": "https://www.ouh.nhs.uk/media/rm5j1dxk/tb202454-integrated-performance-report-m2.pdf",
+      "file": "cli/tmp/pdfs/demo-matches/oxford-performance.pdf",
+      "note": ""
+    },
+    {
+      "id": "S36",
+      "title": "Original protanopia demo",
+      "credit": "Local repository fixture; user-provided baseline",
+      "url": "",
+      "file": "cli/tests/fixtures/Test_Document_Protanopia.pdf",
+      "note": ""
+    },
+    {
+      "id": "S37",
+      "title": "Protanopia Chart Stress Test",
+      "credit": "Synthetic data; created earlier in this chat",
+      "url": "",
+      "file": "cli/output/pdf/Protanopia_Chart_Stress_Test.pdf",
+      "note": "The full 8-page original includes an answer key. These are fictional data."
+    }
+  ],
+  "cases": [
+    {
+      "source": "S01",
+      "title": "21 overlapping wavelength spectra",
+      "locator": "PDF p.74 | Figure 35",
+      "task": "Follow one spectrum through the crossings near 300-350 nm and match it to the R legend.",
+      "panels": [
+        {
+          "page": 74,
+          "crop": [
+            0.12,
+            0.06,
+            0.875,
+            0.405
+          ]
+        }
+      ],
+      "section": "Chemistry",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S02",
+      "title": "Temperature and titration spectra",
+      "locator": "PDF pp.14-15 | Figures 8a and 10",
+      "task": "Track the ordering of the curves before and after the shared crossing. Keep temperature and titrant interpretations separate.",
+      "panels": [
+        {
+          "page": 14,
+          "crop": [
+            0.115,
+            0.12,
+            0.48,
+            0.307
+          ],
+          "label": "Temperature series - Figure 8a"
+        },
+        {
+          "page": 15,
+          "crop": [
+            0.31,
+            0.23,
+            0.69,
+            0.43
+          ],
+          "label": "Titration series - Figure 10"
+        }
+      ],
+      "section": "Chemistry",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S03",
+      "title": "Four titration curves",
+      "locator": "PDF p.8 | Figure B",
+      "task": "Trace the red and green curves through both rises. Check that the written curve labels still identify the same paths.",
+      "panels": [
+        {
+          "page": 8,
+          "crop": [
+            0.095,
+            0.045,
+            0.91,
+            0.41
+          ]
+        }
+      ],
+      "section": "Chemistry",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S04",
+      "title": "Absorption bands and colored solutions",
+      "locator": "PDF pp.1 and 3 | Solutions colorées / Le sirop de menthe",
+      "task": "Use the spectra and wavelength scale to distinguish absorbed bands. Preserve the physical meaning of spectrum colors.",
+      "panels": [
+        {
+          "page": 1,
+          "crop": [
+            0.55,
+            0.35,
+            0.99,
+            0.65
+          ],
+          "label": "Absorption bands"
+        },
+        {
+          "page": 3,
+          "crop": [
+            0.45,
+            0.375,
+            0.98,
+            0.525
+          ],
+          "label": "Absorption spectra of two dyes"
+        }
+      ],
+      "section": "Chemistry",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S05",
+      "title": "Four spectra at different pH",
+      "locator": "Web figure | Point isobestique",
+      "task": "Follow the magenta, orange, cyan and green curves through their common crossing.",
+      "panels": [
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Chemistry",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S06",
+      "title": "Dilution changes the curve",
+      "locator": "Web figures | Two superimposed solution curves",
+      "task": "Compare the two curves on each graph. Separate the measurement traces from the dense green grid.",
+      "panels": [
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "label": "pH titration"
+        },
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "file": "output/pdf/research-sampler-sources/dilution-conductivity.jpg",
+          "label": "Conductivity titration"
+        }
+      ],
+      "section": "Chemistry",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S07",
+      "title": "Gene profiles and 19 trajectories",
+      "locator": "PDF pp.3 and 5 | Figures 1a-b and 2u",
+      "task": "Distinguish the six gene profiles and their error bars. In the smaller panel, distinguish the two groups among 19 trajectories.",
+      "panels": [
+        {
+          "page": 3,
+          "crop": [
+            0.235,
+            0.48,
+            0.76,
+            0.65
+          ],
+          "label": "Six genes in each panel"
+        },
+        {
+          "page": 5,
+          "crop": [
+            0.61,
+            0.525,
+            0.81,
+            0.625
+          ],
+          "label": "19 trajectories, two color groups"
+        }
+      ],
+      "section": "Biology",
+      "orientation": "landscape",
+      "weights": [
+        0.7,
+        0.3
+      ],
+      "note": "Figure 1: hb red; gt magenta; Kr green; kni cyan; otd blue; tll black."
+    },
+    {
+      "source": "S08",
+      "title": "Drosophila in a French lesson",
+      "locator": "Web figure | Expression de gènes gap",
+      "task": "Match each gene name in the legend to its expression profile, particularly blue/magenta and red/green curves.",
+      "panels": [
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S09",
+      "title": "Ten crossing genetic trajectories",
+      "locator": "PDF p.67 | Figure 8.6",
+      "task": "Choose a colored trajectory near the beginning and follow it to the end without switching at a crossing.",
+      "panels": [
+        {
+          "page": 67,
+          "crop": [
+            0.205,
+            0.629,
+            0.78,
+            0.823
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S10",
+      "title": "Genetic drift in two populations",
+      "locator": "PDF p.22 | Figure 56",
+      "task": "Compare the spread of the ten trajectories in the two graphs, then follow one trajectory within each graph.",
+      "panels": [
+        {
+          "page": 22,
+          "crop": [
+            0.52,
+            0.015,
+            0.99,
+            0.83
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S11",
+      "title": "Photosynthesis and pigments",
+      "locator": "PDF p.5 | Document 2",
+      "task": "Identify the chlorophyll a, chlorophyll b and carotenoid curves from their labels and follow them across the wavelength axis.",
+      "panels": [
+        {
+          "page": 5,
+          "crop": [
+            0.1,
+            0.06,
+            0.91,
+            0.75
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S12",
+      "title": "Insulin response curves",
+      "locator": "PDF p.2 | Document 2",
+      "task": "Match each response curve to its direct label, then compare its peak and later trend.",
+      "panels": [
+        {
+          "page": 2,
+          "crop": [
+            0.25,
+            0.11,
+            0.8,
+            0.525
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S13",
+      "title": "Sea-level scenarios in an SVT lesson",
+      "locator": "PDF p.6 | Teaching slide",
+      "task": "Identify the colored scenario bands and compare the end-of-century projections without losing the uncertainty ranges.",
+      "panels": [
+        {
+          "page": 6,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S14",
+      "title": "Red and green fluorescence",
+      "locator": "PDF p.1 | Six microscopy panels",
+      "task": "Use the DNA, membrane and CFTR channel labels to compare individual and combined images.",
+      "panels": [
+        {
+          "page": 1,
+          "crop": [
+            0.11,
+            0.333,
+            0.89,
+            0.783
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S15",
+      "title": "Two-color microarray diagram",
+      "locator": "PDF p.14 | Measuring relative target abundance",
+      "task": "Follow treatment and control samples through labeling, mixing and detection. Check that red and green keep their intended roles.",
+      "panels": [
+        {
+          "page": 14,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S16",
+      "title": "Dense red-black-green expression map",
+      "locator": "Online color Figure 2",
+      "task": "Inspect two neighboring gene rows and distinguish high, low and dark cells while keeping the sample columns aligned.",
+      "panels": [
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S17",
+      "title": "A heatmap from a statistics course",
+      "locator": "Web figure | Correlation-distance heatmap",
+      "task": "Read one row across C, H, T and HT. Relate the red/green values to the color key rather than the dendrogram geometry.",
+      "panels": [
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S18",
+      "title": "Volcano plot and expression heatmap",
+      "locator": "Online Figure 8 | Panels A-B",
+      "task": "Separate red and green point groups in the volcano plot, then interpret the independent color scale in the heatmap.",
+      "panels": [
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S19",
+      "title": "Published color-vision comparison",
+      "locator": "PDF p.3 | Figure 2",
+      "task": "Compare each palette with its existing protanopia column. This figure is a reference comparison already present in the source.",
+      "panels": [
+        {
+          "page": 3,
+          "crop": [
+            0.075,
+            0.435,
+            0.94,
+            0.86
+          ]
+        }
+      ],
+      "section": "Biology",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S20",
+      "title": "Regression coefficient paths",
+      "locator": "PDF p.249 | Printed p.238, Figure 6.4",
+      "task": "Match the coefficient paths to their legend and follow their shrinkage. Notice the existing dashed styles as backup cues.",
+      "panels": [
+        {
+          "page": 249,
+          "crop": [
+            0.11,
+            0.105,
+            0.83,
+            0.315
+          ]
+        }
+      ],
+      "section": "Statistics",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S21",
+      "title": "47 algorithm series",
+      "locator": "PDF p.49 | Figure 18",
+      "task": "Select a legend entry and follow its curve. Colors repeat, so retain the solid/dashed distinction and algorithm identifiers.",
+      "panels": [
+        {
+          "page": 49,
+          "crop": [
+            0.105,
+            0.045,
+            0.95,
+            0.865
+          ],
+          "rotate": 90
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S21",
+      "title": "32 algorithm series",
+      "locator": "PDF p.50 | Figure 19",
+      "task": "Track a curve through the densest overlap and match its line style to the corresponding legend entry.",
+      "panels": [
+        {
+          "page": 50,
+          "crop": [
+            0.105,
+            0.045,
+            0.95,
+            0.865
+          ],
+          "rotate": 90
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S21",
+      "title": "30 algorithm series",
+      "locator": "PDF p.51 | Figure 20",
+      "task": "Compare neighboring curves with similar colors while preserving the meaning of each line style.",
+      "panels": [
+        {
+          "page": 51,
+          "crop": [
+            0.105,
+            0.045,
+            0.95,
+            0.865
+          ],
+          "rotate": 90
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S22",
+      "title": "Twelve fingerprint-matching curves",
+      "locator": "PDF p.99 | Figure 52",
+      "task": "Identify one curve from the legend and compare its performance at the same false-acceptance value as another curve.",
+      "panels": [
+        {
+          "page": 99,
+          "crop": [
+            0.12,
+            0.095,
+            0.9,
+            0.51
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S23",
+      "title": "29 countries, six indicators",
+      "locator": "PDF p.67 | Table A J.2",
+      "task": "Locate a country, read its numeric cells and compare the color encoding across indicators. Keep every value unchanged.",
+      "panels": [
+        {
+          "page": 67,
+          "crop": [
+            0.105,
+            0.355,
+            0.91,
+            0.835
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S24",
+      "title": "Financial stability across a decade",
+      "locator": "PDF p.46 | Printed p.39, Figure A.1",
+      "task": "Track one indicator across years and distinguish low, middle and high values using the red-yellow-green scale.",
+      "panels": [
+        {
+          "page": 46,
+          "crop": [
+            0.1,
+            0.035,
+            0.87,
+            0.845
+          ],
+          "rotate": 90
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S25",
+      "title": "Mediterranean temperature curves",
+      "locator": "PDF p.53 | Figure 11.2",
+      "task": "Follow the highlighted yearly curves among the historical traces and distinguish the two ends of the map's temperature scale.",
+      "panels": [
+        {
+          "page": 53,
+          "crop": [
+            0.235,
+            0.482,
+            0.935,
+            0.762
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S26",
+      "title": "The soil-moisture map from the chat",
+      "locator": "Figure 8.1a | Annual anomalies, 2024",
+      "task": "Distinguish negative and positive extremes, then trace the darkest colors back to the numerical legend.",
+      "panels": [
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S27",
+      "title": "Twelve monthly soil-moisture maps",
+      "locator": "Figure S8.4 | Monthly anomalies, 2024",
+      "task": "Compare the same region across months and keep negative and positive anomalies distinct.",
+      "panels": [
+        {
+          "page": null,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S28",
+      "title": "Soil-moisture extremes and time series",
+      "locator": "Figure 8.2 | Europe, 2024",
+      "task": "Link each numbered area on the map to its monthly series and distinguish wet from dry conditions.",
+      "panels": [
+        {
+          "page": 1,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S29",
+      "title": "Fine colored river networks",
+      "locator": "Figure 9.3 | Monthly river flow, 2024",
+      "task": "Compare low-flow and high-flow categories along thin rivers. Preserve the seven-category ordering in the legend.",
+      "panels": [
+        {
+          "page": 1,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "portrait"
+    },
+    {
+      "source": "S30",
+      "title": "A climate-model ensemble",
+      "locator": "PDF p.18 | Box 4.1, Figure 1",
+      "task": "Distinguish individual model traces, ensemble summaries and observations, including inside the inset.",
+      "panels": [
+        {
+          "page": 18,
+          "crop": [
+            0.105,
+            0.1,
+            0.885,
+            0.47
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S30",
+      "title": "Overlapping emissions-scenario simulations",
+      "locator": "PDF p.91 | FAQ 4.2, Figure 1, lower panel",
+      "task": "Separate the thin red and blue simulated temperature paths from the thicker averages.",
+      "panels": [
+        {
+          "page": 91,
+          "crop": [
+            0.315,
+            0.64,
+            0.68,
+            0.86
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S30",
+      "title": "Precipitation change and hatching",
+      "locator": "PDF p.50 | Figure 4.24",
+      "task": "Distinguish positive and negative precipitation change independently of the overlaid hatching categories.",
+      "panels": [
+        {
+          "page": 50,
+          "crop": [
+            0.085,
+            0.365,
+            0.925,
+            0.845
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S30",
+      "title": "Precipitation at four warming levels",
+      "locator": "PDF p.63 | Figure 4.32",
+      "task": "Compare one region at 1.5, 2, 3 and 4 degrees of warming while retaining both the color scale and the uncertainty hatching.",
+      "panels": [
+        {
+          "page": 63,
+          "crop": [
+            0.085,
+            0.385,
+            0.93,
+            0.84
+          ]
+        }
+      ],
+      "section": "Official reports",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S31",
+      "title": "Transport trends and complaint categories",
+      "locator": "PDF pp.3 and 5 | Reliability / Comments and complaints",
+      "task": "Follow the red and green service curves, then match the pie slices to their direct labels.",
+      "panels": [
+        {
+          "page": 3,
+          "crop": [
+            0.085,
+            0.3,
+            0.93,
+            0.7
+          ],
+          "label": "Reliability over time"
+        },
+        {
+          "page": 5,
+          "crop": [
+            0.33,
+            0.205,
+            0.925,
+            0.525
+          ],
+          "label": "Complaint categories"
+        }
+      ],
+      "section": "Demo analogues",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S32",
+      "title": "Transport curves with point markers",
+      "locator": "PDF p.3 | Excess waiting time",
+      "task": "Compare red and green service curves and use the existing point markers and target line as additional cues.",
+      "panels": [
+        {
+          "page": 3,
+          "crop": [
+            0.085,
+            0.2,
+            0.85,
+            0.607
+          ]
+        }
+      ],
+      "section": "Demo analogues",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S33",
+      "title": "Student and classmate learning profiles",
+      "locator": "PDF p.7 | Printed p.125, Figures 2-3",
+      "task": "Separate the red student trace and green comparison trace from the many blue classmate traces in the radar diagrams.",
+      "panels": [
+        {
+          "page": 7,
+          "crop": [
+            0.515,
+            0.335,
+            0.885,
+            0.462
+          ],
+          "label": "Figure 2"
+        },
+        {
+          "page": 7,
+          "crop": [
+            0.61,
+            0.56,
+            0.81,
+            0.697
+          ],
+          "label": "Figure 3"
+        }
+      ],
+      "section": "Demo analogues",
+      "orientation": "landscape",
+      "weights": [
+        1.85,
+        1
+      ]
+    },
+    {
+      "source": "S34",
+      "title": "Red-amber-green dashboard pies",
+      "locator": "PDF p.1 | Quarter 4, 2024/25",
+      "task": "Read each status proportion and compare dashboards. Retain the printed percentages and category labels.",
+      "panels": [
+        {
+          "page": 1,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Demo analogues",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S35",
+      "title": "Dense hospital performance cells",
+      "locator": "PDF p.22 | Safe staffing dashboard",
+      "task": "Follow one ward across columns and compare cell fills and tiny bars without shifting numbers or headings.",
+      "panels": [
+        {
+          "page": 22,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Demo analogues",
+      "orientation": "landscape"
+    },
+    {
+      "source": "S36",
+      "title": "Original demo - crossing red/green lines",
+      "locator": "Original PDF p.2 | Monthly trends",
+      "task": "Identify which product is higher each month. The source page is appended without changing its content stream.",
+      "panels": [
+        {
+          "page": 2,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Local controls",
+      "passthrough": true
+    },
+    {
+      "source": "S37",
+      "title": "Synthetic control - 32 crossing spectra",
+      "locator": "Original PDF p.3 | Fictional data",
+      "task": "Use the reading checks printed on the source page; the original synthetic PDF contains the answer key.",
+      "panels": [
+        {
+          "page": 3,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Local controls",
+      "passthrough": true
+    },
+    {
+      "source": "S37",
+      "title": "Synthetic control - 48 grouped bars",
+      "locator": "Original PDF p.4 | Fictional data",
+      "task": "Use the reading checks printed on the source page; verify labels and values after adaptation.",
+      "panels": [
+        {
+          "page": 4,
+          "crop": [
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ],
+      "section": "Local controls",
+      "passthrough": true
+    }
+  ]
+}
