@@ -14,15 +14,15 @@ class Action(StrictModel):
     target_ids: list[str] = Field(min_length=1, max_length=100)
     channel: Literal["fill", "stroke"] | None = None
     color: str | None = None
-    style: Literal["diagonal", "cross", "dashed", "dotted"] | None = None
+    style: Literal["diagonal", "cross", "dashed", "dotted", "dashdot", "longdash"] | None = None
     source_text_id: str | None = None
 
 
 class CorrectionGroup(StrictModel):
     id: str = Field(min_length=1, max_length=80)
     reason: str = Field(min_length=1, max_length=1000)
-    evidence_text_ids: list[str] = Field(min_length=1, max_length=100)
-    association: Literal["legend", "direct_labels", "ordered_scale"]
+    evidence_text_ids: list[str] = Field(max_length=100)
+    association: Literal["legend", "direct_labels", "ordered_scale", "image_palette"]
     legend_ids: list[str] = Field(max_length=100)
     uncertain: bool
     actions: list[Action] = Field(min_length=1, max_length=100)

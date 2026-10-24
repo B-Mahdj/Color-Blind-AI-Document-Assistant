@@ -54,6 +54,30 @@ class PipelineTests(unittest.TestCase):
         process_document(self.source, self.output, SampleReviewer(legend_plan), overwrite=True)
         self.assertEqual(sentinel.read_text(), "Keep me")
 
+    def test_bookmarks_and_internal_link_destinations_survive(self):
+        from reportlab.pdfgen import canvas
+        from tests.test_extended_pdf import chart
+        pdf = canvas.Canvas(str(self.source), pagesize=(400,400))
+        pdf.bookmarkPage('first')
+        pdf.addOutlineEntry('Chart', 'first')
+        chart(pdf)
+        pdf.showPage()
+        chart(pdf)
+        pdf.linkAbsolute('Back to chart', 'first', Rect=(20,300,140,320))
+        pdf.save()
+        report = process_document(self.source, self.output, SampleReviewer(legend_plan))
+        self.assertEqual(report['status'], 'completed', report['pages'])
+        result = PdfReader(self.output / 'improved.pdf')
+        self.assertEqual(result.outline[0]['/Title'], 'Chart')
+        link = result.pages[1]['/Annots'][0].get_object()
+        self.assertEqual(link['/Dest'][0].idnum, result.pages[0].indirect_reference.idnum)
+        for index in range(2):
+            from colorblind_assistant.pdf import render
+            from PIL import Image
+            import numpy as np
+            preview = Image.open(self.output / 'previews' / f'page-{index+1:04d}.corrected.png')
+            self.assertTrue(np.array_equal(np.array(preview), np.array(render((self.output/'improved.pdf').read_bytes(),index))))
+
     def test_cannot_overwrite_input(self):
         self.output.mkdir()
         source = self.output / "improved.pdf"

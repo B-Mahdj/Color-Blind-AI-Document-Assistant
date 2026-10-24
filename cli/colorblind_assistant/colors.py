@@ -47,6 +47,7 @@ def contrast(first, second) -> float:
 
 
 def color_metrics(pairs: list[tuple]) -> dict:
+    pairs = list(dict.fromkeys((tuple(before), tuple(after)) for before, after in pairs))
     if len(pairs) < 2:
         return {"minimum_separation_before": None, "minimum_separation_after": None}
     old, new = [], []

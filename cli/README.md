@@ -56,24 +56,26 @@ The input is never overwritten. Use a different output directory or `--overwrite
 ## Supported documents
 
 - One digital PDF per run, 1-50 pages and at most 50 MB.
-- Native filled text and simple device RGB/grayscale vector shapes, including ordinary affine transformations.
-- At most 500 shapes and 20,000 extracted text characters per supported page.
+- Native text and RGB, grayscale, CMYK, and supported ICC vector colors, including affine transformations, clipping, ordinary link annotations, and nested Form XObjects.
+- Opaque normal graphics states are supported. Unsupported effects protect the affected objects rather than automatically blocking the entire page.
+- Up to 1,200 editable targets and 30,000 extracted text characters after filtering invisible/neutral objects and bundling small same-color fragments. Individual source paints remain intact.
+- Flat-color bitmap figures have a separate categorical palette path. Replacements are lossless, preserve dimensions and neutral pixels, and affect only the selected image invocation, including its embedded legend.
 - Source text remains in its original language. CLI messages and generated explanations are English.
-- Added labels copy source words; decorative bullet prefixes are omitted. Added labels currently use ASCII glyphs. Unsupported labels are rejected.
+- Added labels copy source words; decorative bullet prefixes are omitted. Helvetica Latin characters, including French accents, are supported. Other glyphs are rejected.
 
-Scans, image-containing pages, Form XObjects, CMYK/ICC/spot colors, shading, clipping paths, transparency, rotated/cropped/offset pages, nonstandard user units, advanced text rendering, and pages with annotations are retained unchanged and reported. A mixed supported/unsupported document still exports every page. Encrypted PDFs and interactive forms are rejected as complete inputs. This conservative subset includes the supplied five-page fixture; it does not cover every digitally created PDF.
+Photos, gradients, continuous/diverging bitmap scales, masked images, shading, spot/pattern colors, real transparency/overprint, and text clipping remain protected. Bitmap colors that are themselves measurements (such as spectral colors or microscopy channels) must not be remapped as categories. Bitmap OCR, hatching, and line-style editing are not implemented. Rotated/cropped/offset page boxes, nonstandard user units, and non-link/custom-appearance annotations still block a page. Encrypted PDFs and interactive forms are rejected as complete inputs. Every page remains in the export; inspect the per-page coverage and warnings to distinguish editable figures from protected content.
 
 Run again from the **original PDF** when changing settings. PDFs already containing assistant cues are not correction inputs for this initial version.
 
 ## How corrections work
 
-1. `pypdf` inventories original paths; `pypdfium2` extracts text positions and renders page images.
+1. `pypdf` recursively inventories original paths, clipping, nested figures, and bitmap palettes; `pypdfium2` extracts text positions and renders page images. The model receives sampled curve trajectories as well as bounding boxes.
 2. DaltonLens simulates protanopia using Viénot 1999 at severity `1.0`.
 3. OpenAI receives original page images, a simulated view, extracted text, stable element IDs, and a consistent categorical palette informed by reader feedback. Suggested colors are checked against existing text and line contrast; they do not establish category associations. Structured responses propose atomic groups of chart/legend corrections.
 4. Local code validates IDs, colors, legend consistency, text contrast in normal and simulated views, scale ordering, and available space. Unknown or uncertain groups remain unchanged. Neutral structural graphics cannot be edited.
-5. Color and dash changes are scoped to original paint operations. Clipped hatching is inserted at the original drawing position so later shapes retain their occlusion. ReportLab adds copied labels and color mapping notes only in nearby whitespace.
+5. Color and dash changes are scoped to original paint operations. Edited Form/image invocation branches are cloned so shared copies elsewhere do not change. Clipped hatching retains drawing order. Label placement checks actual stroked paths rather than treating a curve's entire bounding rectangle as occupied. Bitmap palette masks use original pixels, preventing cascading replacements.
 6. The AI reviews the rendered candidate. It may approve, reject, or provide one replacement plan. A revision is applied from the original page and marked for human review; there is no unbounded loop or second AI review of that revision.
-7. Before publication, the pipeline reopens the PDF and verifies page dimensions, original text/geometry operations, and extractable text. Reports describe accepted edits only.
+7. Before publication, the pipeline reopens the PDF and verifies page dimensions, nested text/geometry operations, image dimensions, annotations, and extractable text. The export retains bookmarks and internal link destinations. Reports describe accepted edits only.
 
 Simulation distances are ranking heuristics. Numeric geometry checks cannot prove an AI's interpretation of a legend; real-reader review remains important.
 
@@ -118,6 +120,7 @@ See [the skill migration plan](../skill/PROJECT_PLAN.md) for completed milestone
 
 - `colorblind_assistant/pdf.py`: inventory, rendering, preservation checks.
 - `colorblind_assistant/editor.py` and `colors.py`: bounded edits and color checks.
+- `colorblind_assistant/raster.py`: flat-color image inventory and lossless palette replacement.
 - `colorblind_assistant/agent.py` and `models.py`: OpenAI interface and structured decisions.
 - `colorblind_assistant/pipeline.py` and `cli.py`: processing, reports, publication, CLI.
 - `tests/`: fixtures and automated regression checks.

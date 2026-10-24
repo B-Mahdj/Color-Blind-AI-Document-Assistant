@@ -46,7 +46,7 @@ This document and all CLI files live under the repository's `cli/` directory. Al
 | 1 | `__main__.py`; `cli.py:main()` | Starts `python -m colorblind_assistant` and parses CLI arguments. |
 | 2 | `cli.py:main()`; `agent.py:OpenAIReviewer.__init__()` | Reads `.env` from the current directory, gives environment variables precedence, checks credentials, and initializes the API client. |
 | 3 | `pipeline.py:process_document()`, `_validate_destination()` | Checks file size, page count, encryption/forms, output collisions, and input protection. |
-| 4 | `pdf.py:single_page_bytes()`, `render()`, `inspect_page()`, `text_runs()` | Uses pypdf and PDFium to inventory vector paths, text positions, colors, and stable element IDs; identifies unsupported pages. |
+| 4 | `pdf.py:inspect_page()`, `compact_fragments()`, `text_runs()`; `raster.py:inspect_image()` | Recurses through Form invocations, tracks transforms/clipping/graphics states, protects unsupported objects, and inventories vector paths and flat-color image palettes. |
 | 5 | `colors.py:simulated_image()`, `simulated_rgb()`, `contrast()`, `color_metrics()`; `agent.py:categorical_color_guidance()` | Runs Viénot protanopia simulation at severity 1.0, calculates contrast/separation heuristics, and offers consistent colors and eligible hatch targets. |
 | 6 | `agent.py:OpenAIReviewer.propose()`, `_request()`; `models.py:Action`, `CorrectionGroup`, `PagePlan`, `PageReview` | Sends page images, text, inventory, and palette guidance to OpenAI. Parses a strict structured response. Document contents are treated as untrusted data. |
 | 7 | `editor.py:_validate_group()`, `apply_plan()` | Rejects uncertain or invalid groups; checks known IDs, legend consistency, contrast, scale ordering, and placement; applies accepted changes atomically per group. |
@@ -60,10 +60,11 @@ This document and all CLI files live under the repository's `cli/` directory. Al
 
 | Correction | Implementation |
 | --- | --- |
-| Change fill/stroke colors | `editor.py:apply_plan()` inserts scoped PDF color operations around the existing paint operation. |
+| Change fill/stroke colors | `editor.py:_edit_objects()` inserts scoped PDF color operations around existing paints, cloning edited Form invocation branches. |
+| Recolor a bitmap category | `raster.py:recolor_image()` classifies original pixels against the complete source palette and changes selected masks; `image_stream()` writes lossless RGB. |
 | Add diagonal/grid patterns | `editor.py:_hatch_operations()` clips hatch strokes to the original shape and preserves drawing order. |
 | Change line style | `editor.py:apply_plan()` inserts dashed or dotted stroke settings. |
-| Add an existing source label | `editor.py:_place()` finds nearby whitespace; `_overlay()` draws the copied text using ReportLab. |
+| Add an existing source label | `editor.py:_place()` checks text, fills, protected objects, and sampled stroke intersections; `_overlay()` draws copied Latin text using ReportLab. |
 | Explain changed color references | `editor.py:_mapping_note()` generates a note from accepted changes; `_place()` and `_overlay()` position and draw it. |
 
 ## Supporting files
@@ -74,6 +75,7 @@ This document and all CLI files live under the repository's `cli/` directory. Al
 - `QA.md`: automated, visual, live API, and reader-validation evidence.
 - `tests/test_pdf.py`: PDF inventory, transformations, preservation, and an independent synthetic fixture.
 - `tests/test_editor.py`: bounded edits, contrast, legend checks, placement, and hatch occlusion.
+- `tests/test_extended_pdf.py`: clipped/nested/shared figures, scoped transparency, bitmap masks, dense fragments, French labels, 32-curve encodings, and nested preservation failures.
 - `tests/test_agent.py`: structured API requests through mocked HTTP, error handling, and palette guidance.
 - `tests/test_pipeline.py`: complete processing, reports, CLI codes, configuration, overwrite, and rollback.
 - `tests/sample_responses.py`: deterministic test responses for controlled QA only; production uses `OpenAIReviewer`.
@@ -82,5 +84,9 @@ This document and all CLI files live under the repository's `cli/` directory. Al
 ## Boundaries
 
 An unsupported page remains unchanged and is included in the complete export. An invalid correction group remains unchanged while other validated groups may proceed. API failures retain the affected original page and appear in the report; fatal configuration/API errors stop subsequent API calls. Document-level or preservation failures stop publication.
+
+Within an inspectable page, unsupported effects are recorded as protected objects. They remain placement obstacles and are never offered as editable targets. The report's coverage counts separate editable targets, original vector paints, eligible bitmap figures, and protected objects. Fragment bundles reduce model input; they do not assert that all same-color marks have the same meaning, and support recoloring only. Clipping bounds used for inventory filtering are conservative rectangles; original clipping paths remain in the PDF.
+
+The bitmap path handles categorical flat colors only. A vision proposal must identify a readable embedded legend/direct labels. This does not provide OCR, segmentation of individual crossing bitmap curves, or scientific validation of a palette's meaning. Photos, continuous scales, masked images, and measurement colors need separate strategies.
 
 The loop allows one proposal, one review, and at most one revision per page. Reader feedback is a manual validation step that informs later code changes. A successful processing run does not by itself establish readability for a reader with protanopia.

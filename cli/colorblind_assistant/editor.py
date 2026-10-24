@@ -7,13 +7,13 @@ from io import BytesIO
 import re
 
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import ArrayObject, ContentStream, FloatObject, NameObject, NumberObject
+from pypdf.generic import ArrayObject, ContentStream, DecodedStreamObject, DictionaryObject, FloatObject, NameObject, NumberObject
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from .colors import color_metrics, contrast, hex_color, luminance, parse_hex, separation, simulated_rgb
 from .models import PagePlan
-from .pdf import PageData, assert_preserved, contains, intersects, single_page_bytes, union
+from .pdf import PageData, assert_preserved, contains, intersects, path_segments, single_page_bytes, union
 
 
 @dataclass
@@ -43,9 +43,13 @@ def _wrap(text, width, font_size=8):
     return lines
 
 
-def _place(text, anchor, data, occupied, note=False):
-    if not text.isascii() or any(ord(char) < 32 for char in text):
-        raise ValueError("This version cannot add labels containing non-ASCII glyphs.")
+def _place(text, anchor, data, occupied, note=False, element=None):
+    try:
+        text.encode('cp1252')
+    except UnicodeEncodeError:
+        raise ValueError("This version cannot add labels outside the Helvetica Latin character set.")
+    if any(ord(char) < 32 for char in text):
+        raise ValueError("Control characters cannot be added as labels.")
     width = min(data.width - 32, 430 if note else 180)
     lines = _wrap(text, width - 8)
     actual_width = max(stringWidth(line, "Helvetica", 8) for line in lines) + 8
@@ -56,13 +60,45 @@ def _place(text, anchor, data, occupied, note=False):
     for gap in (8, 20, 36, 56):
         candidates.extend([(left, top + gap), (left, bottom - gap - height),
                            (right + gap, top - height), (left - gap - actual_width, top - height)])
-    obstacles = [item.bbox for item in data.text] + [item.bbox for item in data.elements] + occupied
+    if element and element.stroke is not None and element.fill is None:
+        segments = path_segments(element.commands)
+        # Endpoints are stronger associations than the corner of a curve's large bounding box.
+        endpoints = [segments[-1][1], segments[0][0]] if segments else []
+        candidates = [(x + 8, y - height / 2) for x, y in endpoints] + candidates
+    obstacles = [item.bbox for item in data.text] + occupied + [item['bbox'] for item in data.protected]
+    strokes = []
+    for item in data.elements:
+        if item.fill is None and item.stroke is not None:
+            strokes.extend(path_segments(item.commands))
+        elif not (item.fill and min(item.fill) > .98 and contains(item.bbox, (12, 12, data.width-12, data.height-12))):
+            obstacles.append(item.bbox)
     for x, y in candidates:
         x = min(max(16, x), data.width - actual_width - 16)
         box = (x, y, x + actual_width, y + height)
-        if contains((12, 12, data.width - 12, data.height - 12), box) and not any(intersects(box, other, 3) for other in obstacles):
+        if (contains((12, 12, data.width - 12, data.height - 12), box)
+                and not any(intersects(box, other, 3) for other in obstacles)
+                and not any(_segment_crosses(box, a, b, 3) for a, b in strokes)):
             return {"text": text, "lines": lines, "bbox": box}
     raise ValueError("No nearby whitespace can hold the label without obscuring content.")
+
+
+def _segment_crosses(box, a, b, padding):
+    """Liang-Barsky clipping: a diagonal's bounding box is not an occupied rectangle."""
+    l, bottom, r, top = box
+    l, bottom, r, top = l-padding, bottom-padding, r+padding, top+padding
+    lo, hi = 0., 1.
+    dx, dy = b[0]-a[0], b[1]-a[1]
+    for p, q in ((-dx, a[0]-l), (dx, r-a[0]), (-dy, a[1]-bottom), (dy, top-a[1])):
+        if abs(p) < 1e-12:
+            if q < 0:
+                return False
+        elif p < 0:
+            lo = max(lo, q/p)
+        else:
+            hi = min(hi, q/p)
+        if lo > hi:
+            return False
+    return True
 
 
 def _has_color_reference(data):
@@ -124,11 +160,23 @@ def _validate_group(group, data, edits, used, occupied):
     texts = {item.id: item for item in data.text}
     if group.uncertain:
         raise ValueError("The model marked the association uncertain.")
+    if not group.evidence_text_ids and group.association != 'image_palette':
+        raise ValueError('Vector groups need source text evidence.')
     if any(item not in texts for item in group.evidence_text_ids):
         raise ValueError("Unknown source text ID.")
     targets = {item for action in group.actions for item in action.target_ids}
     if any(item not in elements for item in targets):
-        raise ValueError("Unknown vector element ID.")
+        raise ValueError("Unknown element ID.")
+    if any(not elements[item].editable for item in targets):
+        raise ValueError('A protected object cannot be edited.')
+    raster_targets = {item for item in targets if elements[item].kind == 'raster_palette'}
+    if group.association == 'image_palette':
+        if targets != raster_targets or len({elements[item].image_id for item in targets}) != 1:
+            raise ValueError('An image palette group must refer to one bitmap and its embedded legend.')
+        if any(action.kind != 'recolor' or action.channel != 'fill' for action in group.actions):
+            raise ValueError('Bitmap palette targets support recolor fill actions only.')
+    elif raster_targets:
+        raise ValueError('Bitmap targets require the categorical image_palette association.')
     if targets & used:
         raise ValueError("Another accepted group already edits this element.")
     if group.association == "legend":
@@ -165,7 +213,10 @@ def _validate_group(group, data, edits, used, occupied):
                     raise ValueError("A recolor action must change the color.")
                 config[action.channel] = after
                 record.update(channel=action.channel, before=hex_color(before), after=hex_color(after))
-                if action.channel == "fill":
+                if element.kind == 'raster_palette':
+                    if contrast(after, (1, 1, 1)) + .05 < min(3, contrast(before, (1, 1, 1))):
+                        raise ValueError('Bitmap recolor would reduce contrast on a white chart background.')
+                elif action.channel == "fill":
                     for text in data.text:
                         if intersects(element.bbox, text.bbox):
                             floor = min(4.5, contrast(text.color, before))
@@ -177,6 +228,8 @@ def _validate_group(group, data, edits, used, occupied):
                 elif contrast(after, (1, 1, 1)) + .05 < min(3, contrast(before, (1, 1, 1))):
                     raise ValueError("Recolor would reduce line contrast on the page background.")
             elif action.kind == "hatch":
+                if element.members:
+                    raise ValueError('Fragment bundles support recoloring, not hatching.')
                 if action.color or action.channel or action.source_text_id or action.style not in {"diagonal", "cross"} or element.fill is None:
                     raise ValueError("Hatching requires a filled shape and a supported style.")
                 if min(element.bbox[2] - element.bbox[0], element.bbox[3] - element.bbox[1]) < 6:
@@ -186,7 +239,9 @@ def _validate_group(group, data, edits, used, occupied):
                 config["hatch"] = action.style
                 record["style"] = action.style
             elif action.kind == "dash":
-                if action.color or action.channel or action.source_text_id or action.style not in {"dashed", "dotted"} or element.stroke is None or element.fill is not None:
+                if element.members:
+                    raise ValueError('Fragment bundles cannot carry a continuous dash pattern.')
+                if action.color or action.channel or action.source_text_id or action.style not in {"dashed", "dotted", "dashdot", "longdash"} or element.stroke is None or element.fill is not None:
                     raise ValueError("Line styles require an unfilled stroked path.")
                 if max(element.bbox[2] - element.bbox[0], element.bbox[3] - element.bbox[1]) < 8:
                     raise ValueError("The line is too short for a readable dash pattern.")
@@ -200,7 +255,7 @@ def _validate_group(group, data, edits, used, occupied):
                 # A copied legend label need not duplicate its decorative bullet glyph.
                 label_text = texts[action.source_text_id].text.lstrip(" \u2022\u25cf\u25aa\u25e6")
                 label = _place(label_text, element.bbox, data,
-                               occupied + [item["bbox"] for item in additions])
+                               occupied + [item["bbox"] for item in additions], element=element)
                 additions.append(label)
                 record.update(text=label["text"], bbox=label["bbox"], source_text_id=action.source_text_id)
             changes.append(record)
@@ -290,11 +345,83 @@ def _overlay(data, labels):
     return out.getvalue()
 
 
+def _edit_objects(edited, writer, data, edits):
+    """Clone only edited invocation branches; a shared Form/image stays unchanged elsewhere."""
+    vector_edits, raster_edits = {}, {}
+    for item in data.elements:
+        if item.id not in edits:
+            continue
+        if item.kind == 'raster_palette':
+            raster_edits.setdefault((item.stream_path, item.paint_index), []).append((item, edits[item.id]))
+        else:
+            for member in item.members or [item]:
+                vector_edits[(member.stream_path, member.paint_index)] = (member, edits[item.id])
+    locations = set(vector_edits) | set(raster_edits)
+
+    def rewrite(obj, path, resources):
+        resources = DictionaryObject(dict(resources))
+        xobjects = DictionaryObject(dict(resources.get('/XObject', {}).get_object())) if '/XObject' in resources else DictionaryObject()
+        resources[NameObject('/XObject')] = xobjects
+        stream = ContentStream(obj.get_contents() if hasattr(obj, 'get_contents') else obj, writer)
+        operations = []
+        for index, (args, op) in enumerate(stream.operations):
+            branch = (*path, index)
+            if op == b'Do' and any(p[:len(branch)] == branch for p, _ in locations):
+                source = xobjects[args[0]].get_object()
+                clone = DecodedStreamObject()
+                clone.update({key: value for key, value in source.items() if key not in {'/Length', '/Filter', '/DecodeParms'}})
+                clone.set_data(source.get_data())
+                rewrite(clone, branch, source.get('/Resources', resources).get_object())
+                name = _object_name(xobjects, index)
+                xobjects[name] = writer._add_object(clone)
+                args = [name]
+            if (path, index) in raster_edits:
+                from .raster import image_stream, recolor_image
+                targets = raster_edits[(path, index)]
+                image = data.images[targets[0][0].image_id]
+                mappings = [(tuple(round(c*255) for c in item.fill), tuple(round(c*255) for c in config['fill'])) for item, config in targets]
+                replacement, _ = recolor_image(image['image'], mappings, image['colors'])
+                name = _object_name(xobjects, index)
+                xobjects[name] = writer._add_object(image_stream(replacement))
+                args = [name]
+            element, config = vector_edits.get((path, index), (None, None))
+            if config:
+                operations.append(([], b'q'))
+                for channel, operator in (('fill', b'rg'), ('stroke', b'RG')):
+                    if channel in config:
+                        operations.append((_float_args(config[channel]), operator))
+                if 'dash' in config:
+                    pattern = {'dashed': [6,3], 'dotted': [1,2], 'dashdot': [5,2,1,2], 'longdash': [9,3]}[config['dash']]
+                    a, b, c, d, _, _ = element.matrix
+                    scale = max((a*a+b*b)**.5, (c*c+d*d)**.5, 1e-8)
+                    operations.append(([ArrayObject(_float_args([n/scale for n in pattern])), NumberObject(0)], b'd'))
+            operations.append((args, op))
+            if config:
+                if 'hatch' in config:
+                    operations.extend(_hatch_operations(element, config))
+                operations.append(([], b'Q'))
+        stream.operations = operations
+        obj[NameObject('/Resources')] = resources
+        if hasattr(obj, 'replace_contents'):
+            obj.replace_contents(stream)
+        else:
+            obj.set_data(stream.get_data())
+
+    rewrite(edited, (), edited['/Resources'])
+
+
+def _object_name(xobjects, index):
+    name = NameObject(f'/CBA{index}')
+    while name in xobjects:
+        name = NameObject(str(name) + '_')
+    return name
+
+
 def apply_plan(page, data: PageData, plan: PagePlan) -> EditResult:
     if not data.supported:
         return EditResult(single_page_bytes(page), [], data.warnings[:])
     edits, labels, groups, used, group_ids = {}, [], [], set(), set()
-    warnings = list(plan.warnings)
+    warnings = [*data.warnings, *plan.warnings]
     for group in plan.groups:
         try:
             if group.id in group_ids:
@@ -311,27 +438,7 @@ def apply_plan(page, data: PageData, plan: PagePlan) -> EditResult:
         return EditResult(single_page_bytes(page), [], warnings)
     writer = PdfWriter()
     edited = writer.add_page(page)
-    stream = ContentStream(edited.get_contents(), writer)
-    by_index = {item.paint_index: item for item in data.elements if item.id in edits}
-    operations = []
-    for index, (args, op) in enumerate(stream.operations):
-        element = by_index.get(index)
-        config = edits[element.id] if element else None
-        if config:
-            operations.append(([], b"q"))
-            for channel, operator in (("fill", b"rg"), ("stroke", b"RG")):
-                if channel in config:
-                    operations.append((_float_args(config[channel]), operator))
-            if "dash" in config:
-                pattern = [6, 3] if config["dash"] == "dashed" else [1, 2]
-                operations.append(([ArrayObject([NumberObject(n) for n in pattern]), NumberObject(0)], b"d"))
-        operations.append((args, op))
-        if config:
-            if "hatch" in config:
-                operations.extend(_hatch_operations(element, config))
-            operations.append(([], b"Q"))
-    stream.operations = operations
-    edited.replace_contents(stream)
+    _edit_objects(edited, writer, data, edits)
     if labels:
         overlay = PdfReader(BytesIO(_overlay(data, labels)))
         edited.merge_page(overlay.pages[0])

@@ -10,6 +10,7 @@ import re
 import tempfile
 
 from pypdf import PdfReader, PdfWriter
+from pypdf.generic import NameObject
 
 from .agent import AgentError
 from .colors import simulated_image
@@ -139,7 +140,8 @@ def process_document(input_path, output_dir, agent, overwrite=False, progress=la
         stage = Path(temporary)
         previews = stage / "previews"
         previews.mkdir()
-        writer = PdfWriter()
+        # Preserve the document's bookmark tree and internal link destinations.
+        writer = PdfWriter(clone_from=reader)
         if reader.metadata:
             writer.add_metadata({str(key): str(value) for key, value in reader.metadata.items()})
         disabled = None
@@ -151,11 +153,16 @@ def process_document(input_path, output_dir, agent, overwrite=False, progress=la
             result = EditResult(original_pdf, [], [])
             try:
                 data = inspect_page(page, number)
-                if len(data.elements) > 500 or sum(len(item.text) for item in data.text) > 20000:
+                entry['coverage'] = {'editable_targets': len(data.targets), 'protected_objects': len(data.protected),
+                                     'bitmap_figures': len(data.images),
+                                     'vector_paints': sum(len(item.members) or 1 for item in data.elements if item.kind == 'vector')}
+                if len(data.targets) > 1200 or sum(len(item.text) for item in data.text) > 30000:
                     data.supported = False
-                    data.warnings.append("Page exceeds the initial complexity limit (500 shapes or 20,000 text characters).")
+                    data.warnings.append("Page exceeds the analysis budget after filtering and grouping (1,200 editable targets or 30,000 text characters).")
                 if not data.supported:
                     entry["status"] = "unsupported"
+                    result.warnings.extend(data.warnings)
+                elif not data.targets:
                     result.warnings.extend(data.warnings)
                 elif disabled:
                     entry["status"] = "failed"
@@ -188,7 +195,9 @@ def process_document(input_path, output_dir, agent, overwrite=False, progress=la
             corrected = render(result.pdf)
             after = PdfReader(BytesIO(result.pdf)).pages[0]
             assert_preserved(page, after)
-            writer.add_page(after)
+            destination = writer.pages[number - 1]
+            destination.replace_contents(after.get_contents().clone(writer))
+            destination[NameObject('/Resources')] = after['/Resources'].clone(writer)
             entry["groups"] = result.groups
             entry["warnings"] = list(dict.fromkeys(result.warnings))
             if entry["warnings"] and entry["status"] in {"corrected", "unchanged"}:

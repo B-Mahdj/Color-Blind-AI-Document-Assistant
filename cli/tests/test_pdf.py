@@ -64,7 +64,7 @@ class PDFTests(unittest.TestCase):
         data = inspect_page(PdfReader(BytesIO(output.getvalue())).pages[0], 1)
         self.assertEqual(data.elements[0].bbox, (70, 130, 130, 250))
 
-    def test_cmyk_and_rotation_are_unsupported(self):
+    def test_cmyk_is_supported_but_rotation_is_not(self):
         output = BytesIO()
         pdf = canvas.Canvas(output)
         pdf.drawString(20, 20, "Text")
@@ -72,7 +72,9 @@ class PDFTests(unittest.TestCase):
         pdf.rect(20, 40, 30, 40, fill=1)
         pdf.save()
         page = PdfReader(BytesIO(output.getvalue())).pages[0]
-        self.assertFalse(inspect_page(page, 1).supported)
+        data = inspect_page(page, 1)
+        self.assertTrue(data.supported)
+        self.assertEqual(data.elements[0].fill, (1., 0., 0.))
         page = PdfReader(BytesIO(synthetic_pdf())).pages[0]
         page.rotate(90)
         self.assertFalse(inspect_page(page, 1).supported)
