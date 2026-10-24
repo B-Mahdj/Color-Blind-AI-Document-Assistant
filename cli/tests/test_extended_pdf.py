@@ -225,6 +225,7 @@ class ExtendedPDFTests(unittest.TestCase):
         self.assertIn('blue -> purple',note)
         self.assertNotIn('bleue =',note)
         self.assertEqual(_color_name((.91,.96,1.)), 'pale blue')
+        self.assertEqual(_color_name((0,127/255,134/255)), 'teal')
 
     def test_hidden_text_is_not_a_placement_obstacle_in_transformed_forms(self):
         out = BytesIO()

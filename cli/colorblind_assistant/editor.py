@@ -159,6 +159,8 @@ def _color_name(rgb):
     for boundary, name in ((15, "red"), (45, "orange"), (70, "yellow"), (165, "green"),
                            (195, "cyan"), (255, "blue"), (290, "purple"), (345, "pink"), (361, "red")):
         if degrees < boundary:
+            if name == 'cyan' and value < .7:
+                return 'teal'
             return ('pale ' if saturation < .15 and value > .85 else '') + name
 
 
@@ -197,7 +199,8 @@ def _validate_group(group, data, edits, used, occupied):
             aliases = {'red': ('red','rouge'), 'green': ('green','vert','verte'), 'blue': ('blue','bleu','bleue'),
                        'purple': ('purple','violet','violette','magenta'), 'pink': ('pink','rose','magenta'),
                        'orange': ('orange',), 'yellow': ('yellow','jaune'), 'brown': ('brown','marron'),
-                       'cyan': ('cyan','turquoise'), 'black': ('black','noir','noire'), 'gray': ('gray','grey','gris','grise')}
+                       'cyan': ('cyan','turquoise'), 'teal': ('teal','cyan','turquoise'),
+                       'black': ('black','noir','noire'), 'gray': ('gray','grey','gris','grise')}
             source_colors = [getattr(elements[item], action.channel) for action in group.actions if action.kind == 'recolor'
                              and action.channel in {'fill','stroke'} for item in action.target_ids]
             if not source_colors or any(c is None or not any(re.search(r'\b'+word+r's?\b',legend_text)

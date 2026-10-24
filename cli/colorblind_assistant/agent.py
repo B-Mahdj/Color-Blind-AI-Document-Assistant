@@ -207,7 +207,7 @@ class OpenAIReviewer:
                                [("Original page", original), ("Corrected candidate", corrected),
                                 ("Corrected candidate under protanopia simulation", simulated_image(corrected))],
                                {"applied_groups": applied, "rejected_or_unresolved": rejected,
-                                "task": "Approve only if associations and readability are sound. Otherwise provide ONE complete replacement PagePlan referring to ORIGINAL inventory IDs, or null if uncertain. Never provide a revised plan when approved."},
+                                "task": "Review the applied changes for correct associations and a net readability benefit. Reject introduced ambiguities, misleading keys, obscured text, and mismatched legends. Sound partial improvements may be approved with concrete warnings about remaining unchanged problems; do not require every problem on the page to be solved or neutral black series to be recolored. If one group is invalid, provide ONE complete replacement PagePlan retaining sound groups and removing or repairing the invalid group, using ORIGINAL inventory IDs; use null only if no sound correction remains. Never provide a revised plan when approved."},
                                PageReview)
         if result.approved and result.revised_plan is not None:
             raise AgentError("Review response both approved and replaced the plan.")
