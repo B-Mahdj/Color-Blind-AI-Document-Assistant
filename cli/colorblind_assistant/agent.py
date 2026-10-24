@@ -186,7 +186,7 @@ def categorical_color_guidance(data):
     for source, targets in uses.items():
         variants = [other for other, items in uses.items()
                     if all(item.kind == 'vector' and channel == 'fill' for item, channel in targets + items)
-                    and max(abs(a-b) for a,b in zip(parse_hex(source),parse_hex(other))) <= 12/255]
+                    and max(abs(a-b) for a,b in zip(parse_hex(source),parse_hex(other))) <= 24/255]
         compared_targets = [target for other in variants for target in uses[other]] if variants else targets
         constraints = set()
         for element, channel in compared_targets:

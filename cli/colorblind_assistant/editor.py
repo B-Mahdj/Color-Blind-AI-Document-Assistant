@@ -118,6 +118,10 @@ def _mapping_note(group, changes, data, elements):
     recolors = [change for change in changes if change["kind"] == "recolor"]
     if not recolors or not _has_color_reference(data):
         return None
+    if group.association == 'legend' and group.legend_ids and all(
+            item in elements and elements[item].kind == 'vector' for item in group.legend_ids):
+        # The edited key already supplies the complete category-to-color mapping.
+        return 'Colors updated: use the matching legend. Original color names describe the source.'
     mapping = list(dict.fromkeys((change["before"], change["after"]) for change in recolors))
     if group.association == "ordered_scale":
         ordered = sorted((_numeric_text(elements[c["target_id"]], data), c["after"]) for c in recolors)
@@ -334,8 +338,9 @@ def _validate_group(group, data, edits, used, occupied):
             legend = elements[legend_id]
             legend_config = local[legend_id]
             candidates = [elements[item] for item in targets - set(group.legend_ids)]
-            if not any(((candidate.fill is not None and legend.fill is not None and max(abs(a-b) for a,b in zip(candidate.fill,legend.fill)) <= 12/255)
-                        or (candidate.stroke is not None and legend.stroke is not None and max(abs(a-b) for a,b in zip(candidate.stroke,legend.stroke)) <= 12/255))
+            # Native chart and key paints can differ slightly after CMYK conversion.
+            if not any(((candidate.fill is not None and legend.fill is not None and max(abs(a-b) for a,b in zip(candidate.fill,legend.fill)) <= (24 if candidate.kind == legend.kind == 'vector' else 12)/255)
+                        or (candidate.stroke is not None and legend.stroke is not None and max(abs(a-b) for a,b in zip(candidate.stroke,legend.stroke)) <= (24 if candidate.kind == legend.kind == 'vector' else 12)/255))
                        and (candidate.fill is not None or legend.fill is not None or _same_dash(candidate,legend))
                        and local.get(candidate.id) == legend_config for candidate in candidates):
                 raise ValueError("A legend's new encoding does not match a corresponding chart element.")
