@@ -1,4 +1,4 @@
-from contextlib import redirect_stdout, redirect_stderr
+from contextlib import chdir, redirect_stdout, redirect_stderr
 from io import BytesIO, StringIO
 import json
 import os
@@ -89,12 +89,29 @@ class PipelineTests(unittest.TestCase):
 
     def test_missing_key_and_cli_json(self):
         stdout, stderr = StringIO(), StringIO()
-        with patch.dict(os.environ, {}, clear=True), redirect_stdout(stdout), redirect_stderr(stderr):
+        with chdir(self.root), patch.dict(os.environ, {}, clear=True), redirect_stdout(stdout), redirect_stderr(stderr):
             result = main([str(self.source), "--output-dir", str(self.output)])
         self.assertEqual(result, 1)
         self.assertEqual(json.loads(stdout.getvalue())["status"], "failed")
         self.assertIn("OPENAI_API_KEY", stderr.getvalue())
         self.assertFalse(self.output.exists())
+
+    def test_cli_reads_env_file_and_respects_environment_precedence(self):
+        (self.root / ".env").write_text(
+            '# Local settings\nOPENAI_API_KEY="test-file-key"\nOPENAI_MODEL=file-model\nUNRELATED=value\n',
+            encoding="utf-8-sig")
+        for environment, expected in (({}, ("test-file-key", "file-model")),
+                                      ({"OPENAI_API_KEY": "test-shell-key", "OPENAI_MODEL": "shell-model"},
+                                       ("test-shell-key", "shell-model"))):
+            with self.subTest(environment=bool(environment)), chdir(self.root), patch.dict(os.environ, environment, clear=True):
+                stdout, stderr = StringIO(), StringIO()
+                with patch("colorblind_assistant.cli.OpenAIReviewer") as reviewer, \
+                     patch("colorblind_assistant.cli.process_document", return_value={"status": "completed", "pages": [], "outputs": {}}), \
+                     redirect_stdout(stdout), redirect_stderr(stderr):
+                    self.assertEqual(main([str(self.source)]), 0)
+                reviewer.assert_called_once_with(*expected)
+                self.assertEqual(dict(os.environ), environment)
+                self.assertNotIn("test-file-key", stdout.getvalue() + stderr.getvalue())
 
     def test_cli_completed_partial_and_invalid_exit_codes(self):
         for revision, expected in ((False, 0), (True, 3)):

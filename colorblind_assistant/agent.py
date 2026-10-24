@@ -67,7 +67,7 @@ class OpenAIReviewer:
 
     def __init__(self, api_key, model="gpt-6.1-sol", client=None):
         if not api_key or not api_key.strip():
-            raise AgentError("OPENAI_API_KEY is missing. Set it in the local environment before running.", fatal=True)
+            raise AgentError("OPENAI_API_KEY is missing. Set it in .env in the current directory or in the environment before running.", fatal=True)
         self.model = model
         self.client = client or OpenAI(api_key=api_key, timeout=60, max_retries=1)
         self.calls = []

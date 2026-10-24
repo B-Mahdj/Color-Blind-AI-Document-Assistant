@@ -12,18 +12,19 @@ Requires Python 3.11 or later, internet access for OpenAI, and an API key with a
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e .
 
-# Prompt without putting the key in command history.
-$env:OPENAI_API_KEY = [System.Net.NetworkCredential]::new('', (Read-Host 'OpenAI API key' -AsSecureString)).Password
+# Create the local settings file if it does not already exist, then add your key.
+if (-not (Test-Path -LiteralPath .env)) { Copy-Item -LiteralPath .env.example -Destination .env }
+notepad .env
 
 .\.venv\Scripts\python.exe -m colorblind_assistant tests\fixtures\Test_Document_Protanopia.pdf --output-dir output
 $LASTEXITCODE
 ```
 
-The environment in this checkout is already installed; start at the key prompt to use it. Virtual environments are machine-specific and are not committed.
+The environment in this checkout is already installed. Open `.env`, paste your key after `OPENAI_API_KEY=`, and save it before running the CLI. Virtual environments are machine-specific and are not committed.
 
-The default model is `gpt-6.1-sol`. Set `$env:OPENAI_MODEL = 'your-vision-and-structured-output-model'` to use another compatible model available to your account. The CLI reads environment variables; it **does not load .env files automatically**. [.env.example](.env.example) documents the variables. Keys and generated outputs are ignored by Git.
+The default model is `gpt-6.1-sol`. Change `OPENAI_MODEL` in `.env` to use another compatible model available to your account. The CLI automatically reads `.env` from the **current working directory**, so run it from the project directory. Existing environment variables take precedence over `.env`. Only `OPENAI_API_KEY` and `OPENAI_MODEL` are used from the file; variable expansion is disabled. [.env.example](.env.example) documents the settings. The private `.env` file and generated outputs are ignored by Git.
 
-The installed `colorblind-assistant` command is equivalent to `python -m colorblind_assistant`. On macOS/Linux, use `.venv/bin/python` and export the environment variables in your shell.
+The installed `colorblind-assistant` command is equivalent to `python -m colorblind_assistant`. On macOS/Linux, use `.venv/bin/python` and edit `.env` in your preferred editor.
 
 ## Outputs and exit codes
 

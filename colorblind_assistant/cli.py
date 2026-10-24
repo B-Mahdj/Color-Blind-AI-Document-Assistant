@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import sys
 
+from dotenv import dotenv_values
 from pypdf.errors import PdfReadError
 
 from .agent import AgentError, OpenAIReviewer
@@ -17,7 +18,10 @@ def main(argv=None):
     parser.add_argument("--overwrite", action="store_true", help="Replace this tool's existing output files, never the input")
     args = parser.parse_args(argv)
     try:
-        reviewer = OpenAIReviewer(os.environ.get("OPENAI_API_KEY"), os.environ.get("OPENAI_MODEL", "gpt-6.1-sol"))
+        settings = dotenv_values(Path.cwd() / ".env", encoding="utf-8-sig", interpolate=False)
+        api_key = os.environ.get("OPENAI_API_KEY", settings.get("OPENAI_API_KEY"))
+        model = os.environ.get("OPENAI_MODEL", settings.get("OPENAI_MODEL")) or "gpt-6.1-sol"
+        reviewer = OpenAIReviewer(api_key, model)
         report = process_document(args.input, args.output_dir, reviewer, args.overwrite,
                                   progress=lambda message: print(message, file=sys.stderr, flush=True))
         result = {"status": report["status"], "pages": len(report["pages"]),
