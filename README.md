@@ -92,6 +92,15 @@ Git excludes `.env`, `.env.*` (except the empty `.env.example` template), logs, 
 
 Tests run without an API key or network. They cover the five-page fixture, independent synthetic charts, original-content preservation, group rejection, contrast, label placement, hatch occlusion, API parsing through the real SDK with mocked HTTP, bounded revision, exit handling, and transactional overwrite.
 
+For a larger manual evaluation input, generate the eight-page synthetic stress document:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\generate_stress_pdf.py
+.\.venv\Scripts\python.exe -m colorblind_assistant output\pdf\Protanopia_Chart_Stress_Test.pdf --output-dir output-stress-test
+```
+
+The generator runs locally without API calls. It includes 10-, 20-, and 32-curve charts, 48 grouped bars, a pie and status cards, a 96-cell heatmap, regional scorecards, and an answer key. Its colors are deliberately confusing under protanopia simulation. The generator checks parser support for all eight pages, the curve counts, and the application's per-page limits; successful generation does not establish correction quality. The second command runs the actual OpenAI-backed correction pipeline.
+
 `tests/sample_responses.py` supplies **controlled test responses only**. It is never selected by the production CLI. The local `output-controlled-qa/` sample is identified as such in its reports. It demonstrates the PDF engine; it is not evidence of live model performance.
 
 See [QA.md](QA.md) for visual review and positive qualitative reader feedback on the controlled sample. A separate live run with `gpt-6.1-sol` completed all ten API calls and produced `output-live-qa/`: four pages changed, one remained unchanged, and unresolved issues correctly yielded a partial result. The reader found that live output harder to read, especially "At risk" versus "Delayed"; it has not passed reader validation.
