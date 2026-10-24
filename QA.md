@@ -8,7 +8,7 @@ The five-page sample in `output-controlled-qa/` uses controlled, deterministic r
 
 ## Automated checks
 
-All 29 tests passed using `python -m unittest discover -v`, including the subsequent .env loading change. Coverage includes the supplied five-page PDF, an independent synthetic chart, original text and geometry preservation, color contrast, matching chart and legend cues, transformed hatching and occlusion, copied-label placement, rejected or uncertain edits, unsupported content, API failures, bounded revision, CLI exit codes, environment precedence, and rollback after publication errors or interruption. The installed environment also passed `python -m pip check`.
+All 30 tests passed using `python -m unittest discover -v`, including .env loading and the reader-feedback palette revision. Coverage includes the supplied five-page PDF, an independent synthetic chart and status boxes, original text and geometry preservation, color contrast, matching chart and legend cues, transformed hatching and occlusion, copied-label placement, rejected or uncertain edits, unsupported content, API failures, bounded revision, CLI exit codes, environment precedence, and rollback after publication errors or interruption. The installed environment also passed `python -m pip check`.
 
 ## Controlled sample visual review
 
@@ -29,7 +29,7 @@ A reader who self-identified as having protanopia reviewed the five-page control
 
 This feedback applies to the controlled sample, not to arbitrary documents or untested live AI proposals. New CLI runs correctly start with reader feedback marked pending.
 
-## Live API validation
+## First live API validation
 
 The production CLI processed the supplied five-page fixture using the configured `gpt-6.1-sol` model and the key in the ignored local `.env` file. All ten API calls completed (one proposal and one review per page). Recorded API time totaled 131.02 seconds; reported usage was 69,075 input tokens and 7,889 output tokens, or 76,964 tokens total. These are API usage records, not a cost estimate or a performance benchmark.
 
@@ -45,8 +45,18 @@ Some model warnings describe the initial candidate before its allowed revision. 
 
 The reader with protanopia subsequently reported that this live output was hard to read globally, especially the difference between "At risk" and "Delayed." They preferred the earlier controlled sample. This live output **did not pass reader validation**: its unchanged red status colors are a concrete remaining failure. The local report records this feedback; the earlier positive feedback must not be attributed to the live result.
 
+## Revised live API validation
+
+After that feedback, the production reviewer now receives generic source-to-new-color suggestions using the palette from the preferred sample. Suggestions check the page's existing text and line contrast, apply consistently to identical source colors, and identify text-free shapes eligible for matching hatches. They use vector data rather than fixture page numbers or label names. Semantic associations still require model evidence and local validation.
+
+The new run is saved separately in `output-live-qa-v2/`. All ten calls completed with `gpt-6.1-sol`, recording 114.60 seconds of API time and 81,107 total tokens. All five pages received changes, and original text, page dimensions, page count, and geometry checks passed. All five page previews and all five corrected simulations were visually inspected.
+
+Page 3 now uses orange for "On track," blue for "At risk," purple for "Delayed," and dark gray for "Completed," with matching pie and legend colors. Both the normal page preview and the protanopia simulation are pixel-identical to page 3 of the reader-preferred controlled sample. The page passed AI review without warnings.
+
+The result is still **partial**, not a fully validated demo. East and West on page 1 remain unchanged because their category mappings are uncertain; the other bars and their matching legend symbols are corrected. Pages 1 and 2 received one revision and retain human-review warnings. Pages 3-5 passed AI review. Existing region labels remain important where colors look similar under simulation. Overall reader feedback on this new live output is still pending.
+
 ## Outstanding validation
 
-- Resolve or explicitly retain the live run's ambiguous bar associations and page 3 color correspondence before presenting it as a fully corrected demo.
-- Have a reader with protanopia compare identification tasks on the live output and record remaining difficulties.
+- Resolve or explicitly retain the East and West bar associations before presenting a fully corrected demo.
+- Have the reader compare identification tasks on the revised live output and record remaining difficulties; do not carry the earlier approval over to the whole new document.
 - Gather task-based feedback on additional documents when expanding support.
