@@ -114,3 +114,13 @@ The processed short edition inherits the v5 corrections and its unresolved limit
 The output is `../output/pdf/Geography_Hard_Colors_Sampler.pdf`. Its JSON companion records source URLs, page selections, crop bounds, output dimensions, and hashes. Checks verify the seven-page limit, inclusion of every selected source page, seven source links, seven bookmark destinations, unchanged source-file hashes, and retention of source color-setting values and path-operator counts. The approximately 28 MB PDF is within the CLI's 50 MB input limit. The generator temporarily allows six million parsing tokens for the hash-checked DATAR map, whose content stream contains about 4.3 million tokens; application limits are unchanged.
 
 All seven pages were rendered at 1.5 scale and visually inspected, including full legends, source credits, and the two combined landscape pages. The map graphics remain native PDF content where available; original bitmap maps remain bitmaps. No accessibility correction or live API call was performed, and this collection is not an accessibility pass. Production application code was not changed.
+
+### Geography page 4 viewer compatibility
+
+The user reported a blank map on page 4. The first validation used PDFium, which rendered the page successfully; it missed a JPEG 2000 decoder dependency in other viewers. PDF.js 5.6.205 reproduced the missing maps when its OpenJPEG decoder assets were unavailable, reporting three image-decoding failures. Poppler and PDFium displayed the original page normally.
+
+The builder now converts the three existing JPEG 2000 image streams on page 4 to lossless Flate compression, retaining their decoded RGB samples, dimensions, ICC profile, metadata, and placement. Text, legends, and vectors remain native PDF objects. The helper checks the decoded bytes and dimensions; a second conversion pass changes zero images. The repaired page renders in PDF.js without configuring a JPEG 2000 decoder and is pixel-identical to the original in PDFium at 1.5 scale.
+
+The replacement is `../output/pdf/Geography_Hard_Colors_Sampler_v2.pdf`; its new filename avoids reusing the already-open viewer tab. The original PDF is retained. This is a display compatibility repair, with no color correction or production application changes.
+
+Final checks passed for all seven page renders, which are pixel-identical to the original PDFium renders. Poppler also renders page 4 identically before and after the repair. The final PDF.js page 4 was visually inspected and its map region passed a nonblank-color check without decoder assets configured. The seven source links and bookmarks, unchanged source files, and original PDF hash were verified. The replacement is 32,362,579 bytes, below the 50 MB input limit.

@@ -6,6 +6,7 @@ selected-geography-sources.json. No recoloring or rasterization is performed.
 
 from collections import Counter
 from hashlib import sha256
+from io import BytesIO
 import json
 from pathlib import Path
 
@@ -17,11 +18,12 @@ from reportlab.lib.pagesizes import A3, A4, landscape
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+from colorblind_assistant.raster import image_stream
 import build_research_sampler as layout
 
 
 SOURCE_DIR = layout.OUT / "geography-research"
-TARGET = layout.OUT / "Geography_Hard_Colors_Sampler.pdf"
+TARGET = layout.OUT / "Geography_Hard_Colors_Sampler_v2.pdf"
 PREVIEWS = layout.ROOT / "tmp/pdfs/geography-sampler"
 SOURCES = json.loads((SOURCE_DIR / "selected-geography-sources.json").read_text(encoding="utf-8"))
 # Fractions are measured from the top left; crop only the surrounding whitespace.
@@ -48,6 +50,26 @@ PATH_OPS = {b"m", b"l", b"c", b"v", b"y", b"h", b"re", b"S", b"s", b"f", b"F", b
 def graphics_signature(page):
     return Counter((op, repr(args) if op in COLOR_OPS else "") for args, op in page.get_contents().operations
                    if op in COLOR_OPS | PATH_OPS)
+
+
+def reencode_jpx_images(writer, page):
+    """Keep the maps visible in PDF.js viewers without a JPEG 2000 decoder."""
+    changed = 0
+    xobjects = page["/Resources"].get("/XObject", {})
+    for name, ref in list(xobjects.items()):
+        obj = ref.get_object()
+        if obj.get("/Filter") != "/JPXDecode":
+            continue
+        with Image.open(BytesIO(obj.get_data())) as image:
+            assert image.mode == "RGB" and obj["/BitsPerComponent"] == 8
+            assert image.size == (obj["/Width"], obj["/Height"])
+            replacement = image_stream(image)
+            # Retain the source ICC profile, rendering intent and image metadata.
+            replacement.update({k: v for k, v in obj.items() if k not in {"/Filter", "/DecodeParms", "/Length"}})
+            assert replacement.get_data() == image.tobytes()
+        xobjects[name] = writer._add_object(replacement)
+        changed += 1
+    return changed
 
 
 def build():
@@ -89,11 +111,12 @@ def build():
                 x - left * scale, py - bottom * scale), expand=False)
             x += (right - left + gap) * scale
         writer.add_page(output_page)
+        reencoded = reencode_jpx_images(writer, writer.pages[-1])
         writer.add_outline_item(title, number - 1)
         signatures.append(signature)
         records.append({"page": number, "title": title, "source_file": source["file"],
                         "source_pages": pages, "source_url": source["url"], "crops": crops,
-                        "size_points": size, "source_scale": scale})
+                        "size_points": size, "source_scale": scale, "lossless_jpx_reencodings": reencoded})
     writer.add_metadata({"/Title": "Géographie - cartes aux couleurs difficiles",
                          "/Subject": "Sept pages d'extraits, couleurs et légendes d'origine conservées",
                          "/Author": "Compilation pour Color-Blind AI Document Assistant"})
@@ -128,7 +151,8 @@ def build():
     manifest = {"pages": records, "sources": SOURCES,
                 "checks": {"page_count": 7, "all_selected_source_pages_included": True,
                            "source_files_unchanged": True, "source_color_and_path_operators_retained": True,
-                           "source_links_verified": 7, "bookmarks_verified": 7, "pages_rendered": 7},
+                           "source_links_verified": 7, "bookmarks_verified": 7, "pages_rendered": 7,
+                           "lossless_jpx_reencodings": sum(r["lossless_jpx_reencodings"] for r in records)},
                 "correction_pipeline_run": False, "sha256": sha256(TARGET.read_bytes()).hexdigest()}
     TARGET.with_suffix(".json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({"pdf": str(TARGET), "bytes": TARGET.stat().st_size, **manifest["checks"]}, indent=2))
