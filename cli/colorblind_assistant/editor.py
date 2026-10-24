@@ -43,14 +43,14 @@ def _wrap(text, width, font_size=8):
     return lines
 
 
-def _place(text, anchor, data, occupied, note=False, element=None):
+def _place(text, anchor, data, occupied, note=False, element=None, width_limit=None):
     try:
         text.encode('cp1252')
     except UnicodeEncodeError:
         raise ValueError("This version cannot add labels outside the Helvetica Latin character set.")
     if any(ord(char) < 32 for char in text):
         raise ValueError("Control characters cannot be added as labels.")
-    width = min(data.width - 32, 430 if note else 180)
+    width = min(data.width - 32, width_limit or (430 if note else 180))
     lines = _wrap(text, width - 8)
     actual_width = max(stringWidth(line, "Helvetica", 8) for line in lines) + 8
     height = len(lines) * 11 + 6
@@ -79,7 +79,26 @@ def _place(text, anchor, data, occupied, note=False, element=None):
                 and not any(intersects(box, other, 3) for other in obstacles)
                 and not any(_segment_crosses(box, a, b, 3) for a, b in strokes)):
             return {"text": text, "lines": lines, "bbox": box}
+    if note and width_limit is None:
+        # A table may have a narrow blank column even when a full-width note
+        # would overlap the neighboring plot. Wrap it; do not shrink the text.
+        for narrower in dict.fromkeys((max(120,right-left),220,150)):
+            if narrower >= width:
+                continue
+            try:
+                return _place(text,anchor,data,occupied,note=True,element=element,width_limit=narrower)
+            except ValueError:
+                pass
     raise ValueError("No nearby whitespace can hold the label without obscuring content.")
+
+
+def _same_dash(first, second):
+    if len(first.dash) != len(second.dash):
+        return False
+    # A scaled legend has shorter dashes AND thinner strokes. Compare the
+    # original pattern in stroke-width units, not absolute page lengths.
+    a, b = max(first.line_width,1e-6), max(second.line_width,1e-6)
+    return all(abs(x/a-y/b) <= .03 for x,y in zip(first.dash,second.dash))
 
 
 def _segment_crosses(box, a, b, padding):
@@ -293,7 +312,7 @@ def _validate_group(group, data, edits, used, occupied):
             candidates = [elements[item] for item in targets - set(group.legend_ids)]
             if not any(((candidate.fill is not None and candidate.fill == legend.fill)
                         or (candidate.stroke is not None and candidate.stroke == legend.stroke))
-                       and (candidate.fill is not None or legend.fill is not None or candidate.dash == legend.dash)
+                       and (candidate.fill is not None or legend.fill is not None or _same_dash(candidate,legend))
                        and local.get(candidate.id) == legend_config for candidate in candidates):
                 raise ValueError("A legend's new encoding does not match a corresponding chart element.")
     if group.association == "direct_labels":

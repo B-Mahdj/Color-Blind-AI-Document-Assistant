@@ -265,6 +265,33 @@ class ExtendedPDFTests(unittest.TestCase):
         self.assertFalse(result.groups)
         self.assertIn('does not match',result.warnings[0])
 
+    def test_scaled_legend_dashes_match_their_curve(self):
+        out = BytesIO()
+        pdf = canvas.Canvas(out,pagesize=(400,400))
+        pdf.drawString(20,360,'Series A')
+        pdf.setStrokeColorRGB(.8,.1,.1)
+        pdf.setDash(5,2)
+        pdf.saveState()
+        pdf.scale(2,2)
+        pdf.line(25,50,150,100)
+        pdf.restoreState()
+        pdf.line(50,60,80,60)
+        pdf.save()
+        page = PdfReader(BytesIO(out.getvalue())).pages[0]
+        data = inspect_page(page,1)
+        plan = plan_for(data,data.targets)
+        plan.groups[0].actions[0].channel = 'stroke'
+        result = apply_plan(page,data,plan)
+        self.assertTrue(result.groups,result.warnings)
+
+    def test_mapping_note_wraps_in_a_narrow_blank_column(self):
+        block = Element('neighbor',0,(12,12,240,388),[],(.5,.5,.5),None,0,1,IDENTITY)
+        data = PageData(1,400,400,[block],[])
+        note = _place('Color key: green (#ABCDEF) -> pale blue; green (#123456) -> blue.',
+                      (270,40,380,200),data,[],note=True)
+        self.assertGreater(len(note['lines']),1)
+        self.assertGreater(note['bbox'][0],240)
+
     def test_nested_geometry_tampering_is_detected(self):
         out = BytesIO()
         pdf = canvas.Canvas(out)
