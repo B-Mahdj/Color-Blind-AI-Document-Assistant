@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 
 from colorblind_assistant.agent import categorical_color_guidance
 from colorblind_assistant.colors import luminance
-from colorblind_assistant.editor import _place, apply_plan
+from colorblind_assistant.editor import _mapping_note, _place, apply_plan
 from colorblind_assistant.models import Action, CorrectionGroup, PagePlan
 from colorblind_assistant.pdf import Element, IDENTITY, PageData, TextRun, assert_preserved, fill_intersects, inspect_page, render
 from colorblind_assistant.raster import image_palette, native_replacement, recolor_image, recolor_scale, scale_key
@@ -54,15 +54,29 @@ class MapTests(unittest.TestCase):
         notes=[c['text'] for c in result.groups[0]['changes'] if c['kind']=='mapping_note']
         self.assertEqual(notes,['Colors updated: use the matching legend. Original color names describe the source.'])
         group.legend_ids=[data.text[0].id]
-        textual=apply_plan(page,data,PagePlan(groups=[group],warnings=[]))
-        self.assertTrue(textual.groups,textual.warnings)
-        self.assertTrue(any('red' in c['text'] and '-> blue' in c['text']
-                            for c in textual.groups[0]['changes'] if c['kind']=='mapping_note'))
+        textual=_mapping_note(group,result.groups[0]['changes'],data,{e.id:e for e in data.targets})
+        self.assertIn('-> blue',textual)
+        self.assertIn('red',textual)
         data.targets[1].fill=(.7,.3,0)
         group.legend_ids=[data.targets[0].id]
         rejected=apply_plan(page,data,PagePlan(groups=[group],warnings=[]))
         self.assertFalse(rejected.groups)
         self.assertTrue(any('does not match' in w for w in rejected.warnings))
+
+    def test_distinct_legend_categories_cannot_collapse_to_one_color(self):
+        out=BytesIO();pdf=canvas.Canvas(out,pagesize=(400,400))
+        pdf.drawString(20,370,'Categories A and B')
+        for x,color in [(40,(.9,.1,.1)),(220,(.1,.7,.1))]:
+            pdf.setFillColorRGB(*color)
+            pdf.rect(x,50,12,12,fill=1,stroke=0)
+            pdf.rect(x,120,120,100,fill=1,stroke=0)
+        pdf.save();page=PdfReader(BytesIO(out.getvalue())).pages[0];data=inspect_page(page,1)
+        group=CorrectionGroup(id='key',reason='Two existing categories',association='legend',
+            evidence_text_ids=[data.text[0].id],legend_ids=[data.targets[i].id for i in (0,2)],uncertain=False,
+            actions=[Action(kind='recolor',target_ids=[e.id for e in data.targets],channel='fill',color='#005A9C')])
+        result=apply_plan(page,data,PagePlan(groups=[group],warnings=[]))
+        self.assertFalse(result.groups)
+        self.assertTrue(any('reduces simulated separation' in w for w in result.warnings))
 
     def test_label_placement_uses_filled_shape_not_empty_bounds(self):
         triangle=Element('a',0,(0,0,400,400),

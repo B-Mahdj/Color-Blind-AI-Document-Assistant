@@ -103,6 +103,12 @@ def _same_dash(first, second):
     return all(abs(x/a-y/b) <= .03 for x,y in zip(first.dash,second.dash))
 
 
+def _same_paint(first, second, channel):
+    a, b = getattr(first, channel), getattr(second, channel)
+    tolerance = (24 if first.kind == second.kind == 'vector' else 12)/255
+    return a is not None and b is not None and max(abs(x-y) for x,y in zip(a,b)) <= tolerance
+
+
 def _has_color_reference(data):
     return any(re.search(r"\b(red|green|blue|orange|yellow|purple|pink|brown|cyan|magenta|black|white|gray|grey|rouge|vert[e]?|bleu[e]?|jaune|violet[te]*|rose|marron|noir[e]?|blanc[he]*|gris[e]?)s?\b", item.text, re.I) for item in data.text)
 
@@ -339,8 +345,7 @@ def _validate_group(group, data, edits, used, occupied):
             legend_config = local[legend_id]
             candidates = [elements[item] for item in targets - set(group.legend_ids)]
             # Native chart and key paints can differ slightly after CMYK conversion.
-            if not any(((candidate.fill is not None and legend.fill is not None and max(abs(a-b) for a,b in zip(candidate.fill,legend.fill)) <= (24 if candidate.kind == legend.kind == 'vector' else 12)/255)
-                        or (candidate.stroke is not None and legend.stroke is not None and max(abs(a-b) for a,b in zip(candidate.stroke,legend.stroke)) <= (24 if candidate.kind == legend.kind == 'vector' else 12)/255))
+            if not any((_same_paint(candidate,legend,'fill') or _same_paint(candidate,legend,'stroke'))
                        and (candidate.fill is not None or legend.fill is not None or _same_dash(candidate,legend))
                        and local.get(candidate.id) == legend_config for candidate in candidates):
                 raise ValueError("A legend's new encoding does not match a corresponding chart element.")
@@ -353,7 +358,17 @@ def _validate_group(group, data, edits, used, occupied):
     pairs = []
     for change in changes:
         if change["kind"] == "recolor":
-            pairs.append((parse_hex(change["before"]), parse_hex(change["after"])))
+            before, after = parse_hex(change['before']), parse_hex(change['after'])
+            if group.association == 'legend' and not text_legend:
+                target = elements[change['target_id']]
+                matched = [elements[item] for item in group.legend_ids
+                           if _same_paint(target,elements[item],change['channel'])
+                           and local[item] == local[target.id]]
+                if matched:
+                    # Compare categories, not minor paint variants of the same key.
+                    legend = min(matched,key=lambda item: max(abs(a-b) for a,b in zip(before,getattr(item,change['channel']))))
+                    before = getattr(legend,change['channel'])
+            pairs.append((before, after))
     if group.association == "ordered_scale":
         entries = []
         for change in changes:
