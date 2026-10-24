@@ -92,7 +92,7 @@ Tests run without an API key or network. They cover the five-page fixture, indep
 
 `tests/sample_responses.py` supplies **controlled test responses only**. It is never selected by the production CLI. The local `output-controlled-qa/` sample is identified as such in its reports. It demonstrates the PDF engine; it is not evidence of live model performance.
 
-See [QA.md](QA.md) for visual review and positive qualitative reader feedback on the controlled sample. A separate live run with `gpt-6.1-sol` completed all ten API calls and produced `output-live-qa/`: four pages changed, one remained unchanged, and unresolved issues correctly yielded a partial result. Reader feedback on that live output is still pending.
+See [QA.md](QA.md) for visual review and positive qualitative reader feedback on the controlled sample. A separate live run with `gpt-6.1-sol` completed all ten API calls and produced `output-live-qa/`: four pages changed, one remained unchanged, and unresolved issues correctly yielded a partial result. The reader found that live output harder to read, especially "At risk" versus "Delayed"; it has not passed reader validation.
 
 ## Project layout
 

@@ -41,7 +41,9 @@ The run exported all five pages, twenty previews, and both reports to `output-li
 - Page 4 preserves all sixteen values and their positions, with a monotonic blue scale and a note that lighter cells mean higher values.
 - Page 5 retains region names and growth values. Several colors remain similar under simulation; existing text labels are still necessary for identification.
 
-Some model warnings describe the initial candidate before its allowed revision. The applied-change entries identify what actually reached the exported PDF. Reader feedback on this live output is still pending; the earlier positive feedback must not be attributed to it.
+Some model warnings describe the initial candidate before its allowed revision. The applied-change entries identify what actually reached the exported PDF.
+
+The reader with protanopia subsequently reported that this live output was hard to read globally, especially the difference between "At risk" and "Delayed." They preferred the earlier controlled sample. This live output **did not pass reader validation**: its unchanged red status colors are a concrete remaining failure. The local report records this feedback; the earlier positive feedback must not be attributed to the live result.
 
 ## Outstanding validation
 
