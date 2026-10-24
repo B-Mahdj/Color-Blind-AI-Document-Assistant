@@ -68,7 +68,7 @@ Run again from the **original PDF** when changing settings. PDFs already contain
 
 1. `pypdf` inventories original paths; `pypdfium2` extracts text positions and renders page images.
 2. DaltonLens simulates protanopia using Viénot 1999 at severity `1.0`.
-3. OpenAI receives original page images, a simulated view, extracted text, and stable element IDs. Structured responses propose atomic groups of chart/legend corrections.
+3. OpenAI receives original page images, a simulated view, extracted text, stable element IDs, and a consistent categorical palette informed by reader feedback. Suggested colors are checked against existing text and line contrast; they do not establish category associations. Structured responses propose atomic groups of chart/legend corrections.
 4. Local code validates IDs, colors, legend consistency, text contrast in normal and simulated views, scale ordering, and available space. Unknown or uncertain groups remain unchanged. Neutral structural graphics cannot be edited.
 5. Color and dash changes are scoped to original paint operations. Clipped hatching is inserted at the original drawing position so later shapes retain their occlusion. ReportLab adds copied labels and color mapping notes only in nearby whitespace.
 6. The AI reviews the rendered candidate. It may approve, reject, or provide one replacement plan. A revision is applied from the original page and marked for human review; there is no unbounded loop or second AI review of that revision.

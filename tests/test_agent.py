@@ -5,8 +5,11 @@ import unittest
 import httpx
 from openai import OpenAI
 from pypdf import PdfReader
+from reportlab.pdfgen import canvas
 
-from colorblind_assistant.agent import AgentError, OpenAIReviewer
+from colorblind_assistant.agent import AgentError, OpenAIReviewer, categorical_color_guidance
+from colorblind_assistant.editor import apply_plan
+from colorblind_assistant.models import Action, CorrectionGroup, PagePlan
 from colorblind_assistant.pdf import inspect_page, render
 from tests.test_pdf import synthetic_pdf
 
@@ -48,7 +51,32 @@ class AgentTests(unittest.TestCase):
         self.assertNotIn("tools", request)
         content = request["input"][1]["content"]
         self.assertEqual(sum(item["type"] == "input_image" for item in content), 2)
+        guidance = json.loads(content[0]["text"])["categorical_color_guidance"]
+        self.assertEqual([item["suggested_color"] for item in guidance], ["#005A9C", "#A84400"])
+        self.assertEqual(len(guidance[0]["targets"]), 2)
         self.assertEqual(agent.calls[0]["usage"]["total_tokens"], 110)
+
+    def test_guidance_produces_valid_distinct_status_colors(self):
+        output = BytesIO()
+        pdf = canvas.Canvas(output, pagesize=(400, 400))
+        for index, color in enumerate(((.75, .15, .1), (.2, .65, .2), (.78, .17, .12), (.22, .67, .23))):
+            pdf.setFillColorRGB(*color)
+            pdf.rect(40, 40 + index * 70, 200, 50, fill=1, stroke=0)
+            pdf.setFillColorRGB(1, 1, 1)
+            pdf.drawString(60, 60 + index * 70, f"Status {index + 1}")
+        pdf.save()
+        page = PdfReader(BytesIO(output.getvalue())).pages[0]
+        data = inspect_page(page, 1)
+        guidance = categorical_color_guidance(data)
+        self.assertEqual([item["suggested_color"] for item in guidance], ["#005A9C", "#A84400", "#6B3C91", "#303030"])
+        self.assertTrue(all(not item["hatch_eligible_ids"] for item in guidance))
+        actions = [Action(kind="recolor", target_ids=[target["target_id"]], channel=target["channel"], color=item["suggested_color"])
+                   for item in guidance for target in item["targets"]]
+        group = CorrectionGroup(id="statuses", reason="Use existing labels", association="direct_labels",
+                                legend_ids=[], uncertain=False, evidence_text_ids=[text.id for text in data.text], actions=actions)
+        result = apply_plan(page, data, PagePlan(groups=[group], warnings=[]))
+        self.assertFalse(result.warnings, result.warnings)
+        self.assertEqual(len(result.groups[0]["changes"]), 4)
 
     def test_http_error_does_not_disclose_response_body(self):
         agent = self.agent(401, {"error": {"message": "sensitive-marker", "type": "authentication_error"}})

@@ -171,7 +171,7 @@ def process_document(input_path, output_dir, agent, overwrite=False, progress=la
                             result.warnings.extend(review.warnings)
                         elif review.revised_plan is not None:
                             result = apply_plan(page, data, review.revised_plan)
-                            result.warnings.extend(review.warnings)
+                            result.warnings.extend(f"Review of the initial candidate: {warning}" for warning in review.warnings)
                             result.warnings.append("One revision applied after AI review; its final appearance still needs human review.")
                         else:
                             result = EditResult(original_pdf, [], [*result.warnings, *review.warnings,
