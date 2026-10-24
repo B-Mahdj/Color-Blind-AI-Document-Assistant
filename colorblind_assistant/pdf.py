@@ -253,3 +253,5 @@ def assert_preserved(before, after):
     original = preservation_signature(before)
     if preservation_signature(after)[:len(original)] != original:
         raise ValueError("Original text or chart geometry changed.")
+    if not (after.extract_text() or "").startswith(before.extract_text() or ""):
+        raise ValueError("Original extractable text changed.")

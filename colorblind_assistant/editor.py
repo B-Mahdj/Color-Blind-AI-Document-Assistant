@@ -1,6 +1,7 @@
 """Validate semantic groups atomically and apply only bounded vector edits."""
 
 from copy import deepcopy
+import colorsys
 from dataclasses import dataclass
 from io import BytesIO
 import re
@@ -10,7 +11,7 @@ from pypdf.generic import ArrayObject, ContentStream, FloatObject, NumberObject
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
-from .colors import color_metrics, contrast, hex_color, luminance, parse_hex, separation
+from .colors import color_metrics, contrast, hex_color, luminance, parse_hex, separation, simulated_rgb
 from .models import PagePlan
 from .pdf import PageData, assert_preserved, contains, intersects, single_page_bytes, union
 
@@ -82,9 +83,32 @@ def _mapping_note(group, changes, data, elements):
     mapping = list(dict.fromkeys((change["before"], change["after"]) for change in recolors))
     if group.association == "ordered_scale":
         ordered = sorted((_numeric_text(elements[c["target_id"]], data), c["after"]) for c in recolors)
+        low, high = parse_hex(ordered[0][1]), parse_hex(ordered[-1][1])
+        if _color_name(low) == _color_name(high):
+            direction = "darker" if luminance(high) < luminance(low) else "lighter"
+            return (f"Color key: {_color_name(low)} shades; {direction} means higher values. "
+                    "Original color names refer to the source. Numeric values are unchanged.")
         return (f"Color key: low values = {ordered[0][1]}; high values = {ordered[-1][1]}. "
                 "Original color names refer to the source; numeric values are unchanged.")
-    return "Color key (original -> new): " + "; ".join(f"{old} -> {new}" for old, new in mapping) + "."
+    descriptions = []
+    for old, new in mapping:
+        ids = {change["target_id"] for change in recolors if change["before"] == old and change["after"] == new}
+        cues = sorted({f"{change['style']} {'hatch' if change['kind'] == 'hatch' else 'line'}"
+                       for change in changes if change["kind"] in {"hatch", "dash"} and change["target_id"] in ids})
+        descriptions.append(f"{_color_name(parse_hex(old))} -> {_color_name(parse_hex(new))}" +
+                            (f" ({', '.join(cues)})" if cues else ""))
+    return "Color key: " + "; ".join(dict.fromkeys(descriptions)) + "."
+
+
+def _color_name(rgb):
+    hue, saturation, value = colorsys.rgb_to_hsv(*rgb)
+    if saturation < .12:
+        return "black" if value < .25 else "white" if value > .9 else "gray"
+    degrees = hue * 360
+    for boundary, name in ((15, "red"), (45, "orange"), (70, "yellow"), (165, "green"),
+                           (195, "cyan"), (255, "blue"), (290, "purple"), (345, "pink"), (361, "red")):
+        if degrees < boundary:
+            return name
 
 
 def _validate_group(group, data, edits, used, occupied):
@@ -139,6 +163,9 @@ def _validate_group(group, data, edits, used, occupied):
                             floor = min(4.5, contrast(text.color, before))
                             if contrast(text.color, after) + .05 < floor:
                                 raise ValueError(f"Recolor would reduce text contrast near {text.id}.")
+                            simulated_floor = min(4.5, contrast(simulated_rgb(text.color), simulated_rgb(before)))
+                            if contrast(simulated_rgb(text.color), simulated_rgb(after)) + .05 < simulated_floor:
+                                raise ValueError(f"Recolor would reduce simulated text contrast near {text.id}.")
                 elif contrast(after, (1, 1, 1)) + .05 < min(3, contrast(before, (1, 1, 1))):
                     raise ValueError("Recolor would reduce line contrast on the page background.")
             elif action.kind == "hatch":
@@ -162,7 +189,9 @@ def _validate_group(group, data, edits, used, occupied):
                     raise ValueError("A label must copy one known text run beside one target.")
                 if action.source_text_id not in group.evidence_text_ids:
                     raise ValueError("A label must use the group's source evidence.")
-                label = _place(texts[action.source_text_id].text, element.bbox, data,
+                # A copied legend label need not duplicate its decorative bullet glyph.
+                label_text = texts[action.source_text_id].text.lstrip(" \u2022\u25cf\u25aa\u25e6")
+                label = _place(label_text, element.bbox, data,
                                occupied + [item["bbox"] for item in additions])
                 additions.append(label)
                 record.update(text=label["text"], bbox=label["bbox"], source_text_id=action.source_text_id)
