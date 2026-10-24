@@ -9,14 +9,44 @@ from reportlab.pdfgen import canvas
 
 from colorblind_assistant.agent import categorical_color_guidance
 from colorblind_assistant.colors import luminance
-from colorblind_assistant.editor import apply_plan
+from colorblind_assistant.editor import _place, apply_plan
 from colorblind_assistant.models import Action, CorrectionGroup, PagePlan
 from colorblind_assistant.pdf import Element, IDENTITY, PageData, TextRun, assert_preserved, fill_intersects, inspect_page, render
-from colorblind_assistant.raster import image_palette, native_replacement, recolor_image
+from colorblind_assistant.raster import image_palette, native_replacement, recolor_image, recolor_scale, scale_key
 from tests.test_extended_pdf import chart, plan_for
 
 
 class MapTests(unittest.TestCase):
+    def test_nearby_vector_variants_share_text_constraints_without_merging_categories(self):
+        out=BytesIO(); pdf=canvas.Canvas(out,pagesize=(400,400))
+        pdf.setFillColorRGB(.6,.8,.3)
+        pdf.rect(30,40,16,16,fill=1,stroke=0)
+        pdf.setFillColorRGB(.61,.8,.3)
+        pdf.rect(100,80,200,70,fill=1,stroke=0)
+        pdf.setFillColorRGB(0,0,0)
+        pdf.drawString(120,110,'Category A')
+        pdf.save()
+        page=PdfReader(BytesIO(out.getvalue())).pages[0]; data=inspect_page(page,1)
+        guidance=categorical_color_guidance(data)
+        self.assertEqual(len(guidance),2)
+        self.assertNotEqual(guidance[0]['suggested_color'],guidance[1]['suggested_color'])
+        self.assertEqual(set(guidance[0]['compatible_source_colors']),set(g['source_color'] for g in guidance))
+        for suggestion in guidance:
+            group=CorrectionGroup(id='key',reason='Visible matching legend and category',
+                evidence_text_ids=[t.id for t in data.text],association='legend',
+                legend_ids=[data.targets[0].id],uncertain=False,
+                actions=[Action(kind='recolor',target_ids=[e.id for e in data.targets],
+                                channel='fill',color=suggestion['suggested_color'])])
+            result=apply_plan(page,data,PagePlan(groups=[group],warnings=[]))
+            self.assertTrue(result.groups,result.warnings)
+
+    def test_label_placement_uses_filled_shape_not_empty_bounds(self):
+        triangle=Element('a',0,(0,0,400,400),
+            [('m',(0,0)),('l',(400,0)),('l',(0,400)),('h',())],(1,0,0),None,0,1,IDENTITY)
+        data=PageData(1,400,400,[triangle],[])
+        placed=_place('Class A',(220,200,240,220),data,[])
+        self.assertFalse(fill_intersects(triangle,placed['bbox'],3))
+
     def test_form_trailing_save_does_not_leak_into_caller(self):
         out = BytesIO()
         pdf = canvas.Canvas(out, pagesize=(850,400))
@@ -121,6 +151,49 @@ class MapTests(unittest.TestCase):
         self.assertEqual(result.mode,'CMYK')
         self.assertTrue(np.array_equal(np.asarray(result)[:,:50],np.asarray(native)[:,:50]))
         self.assertFalse(np.array_equal(np.asarray(result)[:,50:],np.asarray(native)[:,50:]))
+
+    def test_sampled_key_covers_rare_endpoints_and_preserves_unrelated_pixels(self):
+        image=Image.new('RGB',(320,220),'white')
+        pixels=np.array(image)
+        colors=np.array([(240-i,210-i,20) for i in range(181)],dtype=np.uint8)
+        pixels[20:201,285:295]=colors[:,None,:]
+        pixels[30:150,30:200]=colors[70]
+        pixels[160:163,30:33]=colors[-1]
+        pixels[40:50,40:60]=0
+        pixels[170:190,120:150]=(0,0,240)
+        image=Image.fromarray(pixels)
+        box=[285/320,20/220,295/320,201/220]
+        result,_=recolor_scale(image,box,'top_to_bottom')
+        after=np.asarray(result)
+        self.assertFalse(np.array_equal(after[160:163,30:33],pixels[160:163,30:33]))
+        self.assertTrue(np.array_equal(after[40:50,40:60],pixels[40:50,40:60]))
+        self.assertTrue(np.array_equal(after[170:190,120:150],pixels[170:190,120:150]))
+        self.assertTrue(np.array_equal(after[0:15],pixels[0:15]))
+        levels=[luminance(c/255) for c in after[20:201,290]]
+        self.assertTrue(all(a>=b for a,b in zip(levels,levels[1:])))
+        for bad in ([-.1,0,.2,1],[0,0,0,1],[0,0,float('nan'),1]):
+            with self.assertRaises(ValueError):scale_key(image,bad,'top_to_bottom')
+
+    def test_sampled_scale_exports_and_incomplete_key_is_rejected(self):
+        image=Image.new('RGB',(240,150),(200,20,30))
+        draw=ImageDraw.Draw(image)
+        draw.rectangle((120,0,239,149),fill=(20,180,40))
+        out=BytesIO();pdf=canvas.Canvas(out,pagesize=(400,400))
+        pdf.drawImage(ImageReader(image),40,120,width=240,height=150)
+        pdf.save();page=PdfReader(BytesIO(out.getvalue())).pages[0];data=inspect_page(page,1)
+        group=CorrectionGroup(id='key',reason='Complete source numeric key',evidence_text_ids=[],
+            association='image_scale',legend_ids=[],uncertain=False,legend_box=[0,.1,1,.2],
+            scale_direction='left_to_right',legend_complete=True,
+            actions=[Action(kind='scale',target_ids=[data.targets[0].id])])
+        result=apply_plan(page,data,PagePlan(groups=[group],warnings=[]))
+        self.assertTrue(result.groups,result.warnings)
+        self.assertIn('mapping_note',[c['kind'] for c in result.groups[0]['changes']])
+        assert_preserved(page,PdfReader(BytesIO(result.pdf)).pages[0])
+        self.assertFalse(np.array_equal(np.asarray(render(out.getvalue())),np.asarray(render(result.pdf))))
+        group.legend_complete=False
+        rejected=apply_plan(page,data,PagePlan(groups=[group],warnings=[]))
+        self.assertFalse(rejected.groups)
+        self.assertTrue(any('complete readable numeric key' in w for w in rejected.warnings))
 
     def test_external_vector_legend_and_bitmap_change_together(self):
         image=Image.new('RGB',(120,100),(200,20,20))

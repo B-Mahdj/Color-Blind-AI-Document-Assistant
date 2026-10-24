@@ -187,3 +187,54 @@ def native_replacement(figure, recolored):
     pixels = np.array(native)
     pixels[changed] = np.asarray(converted)[changed]
     return Image.fromarray(pixels, mode=native.mode)
+
+
+def scale_key(image, box, direction):
+    """Sample the actual colored strip, retaining rare endpoint colors."""
+    if (len(box) != 4 or not all(np.isfinite(v) and 0 <= v <= 1 for v in box)
+            or box[0] >= box[2] or box[1] >= box[3]):
+        raise ValueError('Scale key bounds must be a valid normalized rectangle inside the bitmap.')
+    l,t,r,b = [round(v*n) for v,n in zip(box,(image.width,image.height,image.width,image.height))]
+    vertical = direction in {'top_to_bottom','bottom_to_top'}
+    if direction not in {'top_to_bottom','bottom_to_top','left_to_right','right_to_left'}:
+        raise ValueError('Unknown numeric key direction.')
+    if min(r-l,b-t) < 3 or (b-t if vertical else r-l) < 20:
+        raise ValueError('Scale key is too small to sample reliably.')
+    crop = np.asarray(image)[t:b,l:r]
+    key = np.median(crop,axis=1 if vertical else 0)
+    chromatic = np.ptp(key,axis=1)>24
+    if np.mean(chromatic)<.55:
+        raise ValueError('The selected key contains too much text, neutral background, or gaps.')
+    key=key[chromatic]
+    if direction in {'bottom_to_top','right_to_left'}:
+        key=key[::-1]
+    key=key[np.linspace(0,len(key)-1,min(256,len(key))).astype(int)]
+    if np.max(np.ptp(key,axis=0))<24:
+        raise ValueError('The selected key does not contain a usable color scale.')
+    return key.astype(np.float32)
+
+
+def recolor_scale(image, box, direction):
+    """Map colors by their position in the complete source key, including JPEG edges."""
+    key=scale_key(image,box,direction)
+    original=np.asarray(image.convert('RGB'))
+    output=original.copy()
+    low,high=np.array((232,244,255)),np.array((12,38,85))
+    # Row chunks bound the distance matrix even for the largest supported bitmap.
+    changed=0
+    for y in range(0,image.height,16):
+        pixels=original[y:y+16].astype(np.float32)
+        distances=np.max(np.abs(pixels[:,:,None,:]-key),axis=3)
+        index=distances.argmin(axis=2)
+        error=distances.min(axis=2)
+        mask=(error<=24)&(np.ptp(pixels,axis=2)>16)
+        fraction=index/(len(key)-1)
+        rgb=low+fraction[...,None]*(high-low)
+        # Retain small scan/antialias residuals without retaining the old hue.
+        residual=np.mean(pixels-key[index],axis=2)
+        rgb=np.clip(rgb+residual[...,None],0,255).astype(np.uint8)
+        output[y:y+16][mask]=rgb[mask]
+        changed+=int(np.count_nonzero(mask))
+    if not changed:
+        raise ValueError('No pixels match the sampled numeric key.')
+    return Image.fromarray(output),changed

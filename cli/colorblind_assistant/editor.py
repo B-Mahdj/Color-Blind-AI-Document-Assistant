@@ -67,17 +67,18 @@ def _place(text, anchor, data, occupied, note=False, element=None, width_limit=N
         endpoints = [segments[-1][1], segments[0][0]] if segments else []
         candidates = [(x + 8, y - height / 2) for x, y in endpoints] + candidates
     obstacles = [item.bbox for item in data.text if item.visible] + occupied + [item['bbox'] for item in data.protected]
-    strokes = []
+    strokes, fills = [], []
     for item in data.elements:
         if item.fill is None and item.stroke is not None:
             strokes.extend(path_segments(item.commands))
         elif not (item.fill and min(item.fill) > .98 and contains(item.bbox, (12, 12, data.width-12, data.height-12))):
-            obstacles.append(item.bbox)
+            fills.append(item)
     for x, y in candidates:
         x = min(max(16, x), data.width - actual_width - 16)
         box = (x, y, x + actual_width, y + height)
         if (contains((12, 12, data.width - 12, data.height - 12), box)
                 and not any(intersects(box, other, 3) for other in obstacles)
+                and not any(fill_intersects(item, box, 3) for item in fills)
                 and not any(_segment_crosses(box, a, b, 3) for a, b in strokes)):
             return {"text": text, "lines": lines, "bbox": box}
     if note and width_limit is None:
@@ -178,7 +179,7 @@ def _validate_group(group, data, edits, used, occupied):
     texts = {item.id: item for item in data.text}
     if group.uncertain:
         raise ValueError("The model marked the association uncertain.")
-    if not group.evidence_text_ids and group.association not in {'image_palette', 'image_ordered'}:
+    if not group.evidence_text_ids and group.association not in {'image_palette', 'image_ordered', 'image_scale'}:
         raise ValueError('Vector groups need source text evidence.')
     if any(item not in texts for item in group.evidence_text_ids):
         raise ValueError("Unknown source text ID.")
@@ -190,22 +191,34 @@ def _validate_group(group, data, edits, used, occupied):
     raster_targets = {item for item in targets if elements[item].kind == 'raster_palette'}
     if group.palette_order and group.association != 'image_ordered':
         raise ValueError('Palette order is only valid for an ordered bitmap scale.')
-    if group.association in {'image_palette', 'image_ordered'}:
+    if group.association in {'image_palette', 'image_ordered', 'image_scale'}:
         if targets != raster_targets or len({elements[item].image_id for item in targets}) != 1:
             raise ValueError('An image palette group must refer to one bitmap and its embedded legend.')
-        if any(action.kind != 'recolor' or action.channel != 'fill' for action in group.actions):
+        if group.association != 'image_scale' and any(action.kind != 'recolor' or action.channel != 'fill' for action in group.actions):
             raise ValueError('Bitmap palette targets support recolor fill actions only.')
     elif raster_targets and group.association != 'legend':
         raise ValueError('Bitmap targets require an image or matched-legend association.')
     for item in raster_targets:
         figure = data.images[elements[item].image_id]
-        if figure['palette_mode'] == 'ordered_only' and group.association != 'image_ordered':
+        if figure['palette_mode'] == 'ordered_only' and group.association not in {'image_ordered','image_scale'}:
             raise ValueError('A continuous bitmap palette requires an ordered scale.')
         if any(elements[other].image_id == elements[item].image_id for other in used):
             raise ValueError('All edits to one bitmap must be in the same atomic group.')
     if group.association == 'image_ordered':
         if set(group.palette_order) != targets or len(group.palette_order) != len(targets) or len(targets) < 2:
             raise ValueError('Ordered bitmap colors need unique source IDs in ascending value order.')
+        if targets != set(data.images[elements[next(iter(targets))].image_id]['palette_ids']):
+            raise ValueError('Partial ordered palette conversions can leave misleading endpoints; sample the complete numeric key instead.')
+    if group.association == 'image_scale':
+        if len(targets)!=1 or len(group.actions)!=1 or group.actions[0].kind!='scale' or not group.legend_complete:
+            raise ValueError('A sampled scale requires one bitmap target, one scale action and a complete readable numeric key.')
+        from .raster import scale_key
+        figure=data.images[elements[next(iter(targets))].image_id]
+        if group.legend_box is None or group.scale_direction is None:
+            raise ValueError('A sampled scale needs its source key bounds and ascending direction.')
+        scale_key(figure['image'],group.legend_box,group.scale_direction)
+    elif group.legend_box is not None or group.scale_direction is not None or group.legend_complete:
+        raise ValueError('Numeric key coordinates require an image_scale association.')
     if targets & used:
         raise ValueError("Another accepted group already edits this element.")
     text_legend = bool(group.legend_ids) and set(group.legend_ids) <= texts.keys()
@@ -248,7 +261,7 @@ def _validate_group(group, data, edits, used, occupied):
                 raise ValueError("Duplicate or conflicting actions in a group.")
             touched.add(key)
             record = {"kind": action.kind, "target_id": identifier}
-            if element.kind == 'raster_palette' and (action.kind != 'recolor' or action.channel != 'fill'):
+            if element.kind == 'raster_palette' and group.association != 'image_scale' and (action.kind != 'recolor' or action.channel != 'fill'):
                 raise ValueError('Bitmap palette targets support recolor fill actions only.')
             if action.kind == "recolor":
                 if action.channel not in {"fill", "stroke"} or action.style or action.source_text_id or action.color is None:
@@ -277,6 +290,12 @@ def _validate_group(group, data, edits, used, occupied):
                                 raise ValueError(f"Recolor would reduce simulated text contrast near {text.id}.")
                 elif action.channel == 'stroke' and contrast(after, (1, 1, 1)) + .05 < min(3, contrast(before, (1, 1, 1))):
                     raise ValueError("Recolor would reduce line contrast on the page background.")
+            elif action.kind == 'scale':
+                if group.association!='image_scale' or any((action.color,action.channel,action.style,action.source_text_id)):
+                    raise ValueError('Scale actions require only one image palette target and the group source-key fields.')
+                config.update(scale_box=group.legend_box,scale_direction=group.scale_direction)
+                record.update(legend_box=group.legend_box,scale_direction=group.scale_direction,
+                              text='Complete numeric key and matching map pixels use blue; darker means higher values.')
             elif action.kind == "hatch":
                 if element.members:
                     raise ValueError('Fragment bundles support recoloring, not hatching.')
@@ -352,7 +371,8 @@ def _validate_group(group, data, edits, used, occupied):
             and group.association not in {"ordered_scale", "image_ordered"}
             and not any(change["kind"] in {"label", "hatch", "dash"} for change in changes)):
         raise ValueError("The palette reduces simulated separation without an additional cue.")
-    note = _mapping_note(group, changes, data, elements)
+    note = ('Color key: darker blue means higher values. Original numeric labels and key positions are unchanged.'
+            if group.association=='image_scale' else _mapping_note(group, changes, data, elements))
     if text_legend and not note:
         raise ValueError('A textual color legend requires an explicit mapping note.')
     if note:
@@ -435,14 +455,18 @@ def _edit_objects(edited, writer, data, edits):
                 xobjects[name] = writer._add_object(clone)
                 args = [name]
             if (path, index) in raster_edits:
-                from .raster import image_stream, native_replacement, recolor_image
+                from .raster import image_stream, native_replacement, recolor_image, recolor_scale
                 targets = raster_edits[(path, index)]
                 image = data.images[targets[0][0].image_id]
                 ordered = 'ordered_rank' in targets[0][1]
                 if ordered:
                     targets = sorted(targets, key=lambda t: t[1]['ordered_rank'])
-                mappings = [(tuple(round(c*255) for c in item.fill), tuple(round(c*255) for c in config['fill'])) for item, config in targets]
-                replacement, _ = recolor_image(image['image'], mappings, image['colors'], ordered=ordered)
+                if 'scale_box' in targets[0][1]:
+                    config=targets[0][1]
+                    replacement,_=recolor_scale(image['image'],config['scale_box'],config['scale_direction'])
+                else:
+                    mappings = [(tuple(round(c*255) for c in item.fill), tuple(round(c*255) for c in config['fill'])) for item, config in targets]
+                    replacement, _ = recolor_image(image['image'], mappings, image['colors'], ordered=ordered)
                 replacement = native_replacement(image, replacement)
                 name = _object_name(xobjects, index)
                 xobjects[name] = writer._add_object(image_stream(replacement, image['color_space'].clone(writer)))

@@ -42,6 +42,9 @@ For label set source_text_id and exactly one target_id; no invented label text.
 For a legend association, include all affected chart shapes AND their vector legend
 symbols in the same group, and list the legend IDs. Give a legend symbol exactly the
 same changes as its corresponding chart shapes with the same original color.
+List only EDITED legend symbols in legend_ids; retained categories are not targets.
+Protected or uncertain categories do not make separately established category
+associations uncertain. Keep confident partial improvements in their own group.
 If the legend consists of colored TEXT, use direct_labels and add its exact source
 text as a direct label beside a representative chart element. For direct_labels,
 each target must already contain a source label, or the group must add a source label.
@@ -82,15 +85,31 @@ colors may differ by at most 12/255 per RGB channel due to image compression. A 
 color alone is not evidence of the same category. Preserve photographs and aerial
 backgrounds: do not try to recolor a mixed photographic image as a flat map.
 
-For a numerical bitmap scale use association=image_ordered and palette_order listing
+For a numerical bitmap scale PREFER association=image_scale when its complete numeric
+key is visible. Use ONE action kind=scale, target_ids=[any palette ID of that bitmap],
+all other action fields null, palette_order=[], legend_ids=[]. Supply legend_box as
+[left,top,right,bottom] fractions of the ORIGINAL BITMAP width/height (top-left origin).
+Bound ONLY the colored strip or aligned color swatches, excluding adjacent numbers,
+labels, frames and headings. scale_direction describes movement from LOW to HIGH
+source values: top_to_bottom, bottom_to_top, left_to_right or right_to_left.
+Set legend_complete=true only when BOTH ends and all classes of the key are visible
+and its numeric direction is clear. The editor samples the full key including rare
+colors absent from the dominant palette, then applies a continuous pale-to-dark blue
+scale to matching pixels in BOTH map and key. Neutral text and unrelated colors stay
+unchanged. Do not use a categorical/bivariate key, a clipped legend, a diverging scale
+with a meaningful midpoint, or a photograph. Never guess or extend missing values.
+For other associations legend_box and scale_direction must be null and legend_complete=false.
+
+Use association=image_ordered only if EVERY supplied palette ID belongs to a fully
+identified numeric scale. Supply palette_order listing
 the affected raster palette IDs in ASCENDING SOURCE VALUE order, established from its
 existing numeric key. Recolor fill actions only; all affected IDs must occur once in
 palette_order. Use pale blue for lower values and successively darker blue for higher
 values, strictly decreasing lightness also under protanopia. The editor interpolates
 between these anchors to retain continuous gradients, source labels and boundaries.
-Use only the part of an incomplete legend whose colors/order are unambiguous; do not
-invent missing endpoints or reorder arbitrary palette IDs. Explain any retained
-clipping. image palette_mode=ordered_only forbids categorical recoloring. For all
+Do not perform partial scale conversions: missing endpoints can reverse the visible
+ordering. Do not invent missing endpoints or reorder arbitrary palette IDs. Explain
+retained clipping. image palette_mode=ordered_only forbids categorical recoloring. For all
 other associations palette_order must be []. Do not force a diverging scale with a
 meaningful midpoint into a sequential scale. Retain unclear scales with a warning.
 
@@ -103,6 +122,11 @@ Use each suggested source-to-new-color mapping consistently across the related
 chart, legend, and status indicators. Do not leave confidently identified status
 boxes unchanged when their suggested colors pass validation. A shared color alone
 does not prove a semantic relationship; retain each indicator's actual source label.
+compatible_source_colors lists close vector paint variants whose text constraints
+were checked together. If the visible key establishes that such variants encode ONE
+category, choose ONE of their suggested colors for all of that category's targets.
+Different suggestions are alternatives, not a reason to retain a confirmed category.
+Keep genuinely different categories separate even when their source colors are close.
 Use the suggested hatch on eligible chart and legend shapes, keeping it off text.
 Never hatch an element with hatch_size_eligible=false. If a category has tiny bars
 or legend swatches, use a consistent recolor-only encoding for that whole category;
@@ -154,14 +178,18 @@ def categorical_color_guidance(data):
         if dense:
             return dense
     suggestions, available = [], list(PREFERRED_COLORS)
-    if len(uses) > len(PREFERRED_COLORS):
-        available += [hex_color(rgb) for rgb in product((.08, .28, .48, .68, .88), repeat=3)
-                      if max(rgb)-min(rgb) > .1]
+    # Light alternatives also serve small charts with black labels on their fills.
+    available += [hex_color(rgb) for rgb in product((.08, .28, .48, .68, .88), repeat=3)
+                  if max(rgb)-min(rgb) > .1]
     selected = []
     simulations = {color: simulated_rgb(parse_hex(color)) for color in available}
     for source, targets in uses.items():
+        variants = [other for other, items in uses.items()
+                    if all(item.kind == 'vector' and channel == 'fill' for item, channel in targets + items)
+                    and max(abs(a-b) for a,b in zip(parse_hex(source),parse_hex(other))) <= 12/255]
+        compared_targets = [target for other in variants for target in uses[other]] if variants else targets
         constraints = set()
-        for element, channel in targets:
+        for element, channel in compared_targets:
             before = getattr(element, channel)
             comparisons = ([((1, 1, 1), 3)] if element.kind == 'raster_palette' or channel == 'stroke' else
                            [(text.color, 4.5) for text in data.text if text.visible and fill_intersects(element, text.bbox, .5)])
@@ -184,6 +212,7 @@ def categorical_color_guidance(data):
             style = (("diagonal", "cross", None, None, "diagonal", "cross")[PREFERRED_COLORS.index(color)]
                      if color in PREFERRED_COLORS and len(eligible) == len(targets) else None)
             suggestions.append({"source_color": source, "suggested_color": color,
+                                "compatible_source_colors": variants,
                                 "targets": [{"target_id": element.id, "channel": channel} for element, channel in targets],
                                 "suggested_hatch": style, "hatch_eligible_ids": eligible})
             available.remove(color)
@@ -275,7 +304,7 @@ class OpenAIReviewer:
                                [("Original page", original), ("Corrected candidate", corrected),
                                 ("Corrected candidate under protanopia simulation", simulated_image(corrected))],
                                {"applied_groups": applied, "rejected_or_unresolved": rejected,
-                                "task": "Review the applied changes for correct associations and a net readability benefit. Reject introduced ambiguities, misleading keys, obscured text, and mismatched legends. Sound partial improvements may be approved with concrete warnings about remaining unchanged problems; do not require every problem on the page to be solved or neutral black series to be recolored. If one group is invalid, provide ONE complete replacement PagePlan retaining sound groups and removing or repairing the invalid group, using ORIGINAL inventory IDs; use null only if no sound correction remains. Never provide a revised plan when approved."},
+                                "task": "Review the applied changes for correct associations and a net readability benefit. Reject introduced ambiguities, misleading keys, obscured text, and mismatched legends. Sound partial improvements may be approved with concrete warnings about remaining unchanged problems; do not require every problem on the page to be solved or neutral black series to be recolored. Also inspect local rejection reasons: repair resolvable contrast, target-list or optional-hatch errors with ONE complete replacement PagePlan using ORIGINAL inventory IDs, retaining sound groups. An unchanged candidate is not an improvement; do not simply approve it if a safe repair is supported. Use null only if no sound correction remains. Never provide a revised plan when approved."},
                                PageReview)
         if result.approved and result.revised_plan is not None:
             raise AgentError("Review response both approved and replaced the plan.")

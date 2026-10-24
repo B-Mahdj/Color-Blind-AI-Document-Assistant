@@ -10,7 +10,7 @@ class StrictModel(BaseModel):
 
 
 class Action(StrictModel):
-    kind: Literal["recolor", "hatch", "dash", "label"]
+    kind: Literal["recolor", "hatch", "dash", "label", "scale"]
     target_ids: list[str] = Field(min_length=1, max_length=100)
     channel: Literal["fill", "stroke"] | None = None
     color: str | None = None
@@ -22,8 +22,11 @@ class CorrectionGroup(StrictModel):
     id: str = Field(min_length=1, max_length=80)
     reason: str = Field(min_length=1, max_length=1000)
     evidence_text_ids: list[str] = Field(max_length=100)
-    association: Literal["legend", "direct_labels", "ordered_scale", "image_palette", "image_ordered"]
+    association: Literal["legend", "direct_labels", "ordered_scale", "image_palette", "image_ordered", "image_scale"]
     palette_order: list[str] = Field(default_factory=list, max_length=100)
+    legend_box: list[float] | None = Field(default=None, min_length=4, max_length=4)
+    scale_direction: Literal['top_to_bottom', 'bottom_to_top', 'left_to_right', 'right_to_left'] | None = None
+    legend_complete: bool = False
     legend_ids: list[str] = Field(max_length=100)
     uncertain: bool
     actions: list[Action] = Field(min_length=1, max_length=100)
