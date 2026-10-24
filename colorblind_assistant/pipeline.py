@@ -28,7 +28,9 @@ def write_markdown(report, path):
     lines = ["# Protanopia document report", "", f"Status: **{report['status']}**", "",
              f"AI response source: `{report['ai']['source']}`; model: `{_markdown(report['ai']['model'])}`.", "",
              "Original text, values, page sizes, and vector geometry are preserved. Unsupported or uncertain content remains unchanged.", "",
-             "Simulation is an approximation. Readability feedback from a reader with protanopia is still pending.", ""]
+             "Simulation is an approximation. " + ("Readability feedback from a reader with protanopia is still pending."
+                 if report["validation"]["reader_feedback"] == "pending"
+                 else report["validation"].get("reader_feedback_note", "Reader feedback has been recorded separately.")), ""]
     for page in report["pages"]:
         lines.extend([f"## Page {page['number']}: {page['status']}", ""])
         if not page["groups"]:
@@ -101,7 +103,7 @@ def _publish(stage, output, source, overwrite):
         for destination, staged in destinations.items():
             os.replace(staged, destination)
             written.append(destination)
-    except Exception:
+    except BaseException:
         for path in reversed(written):
             path.unlink()
         for destination, backup in reversed(backups):

@@ -54,10 +54,11 @@ class Element:
     stroke: tuple | None
     line_width: float
     fill_rule: int
+    matrix: tuple
 
     def inventory(self):
         return {key: value for key, value in asdict(self).items()
-                if key not in {"commands", "paint_index", "fill_rule"}}
+                if key not in {"commands", "paint_index", "fill_rule", "matrix"}}
 
 
 @dataclass
@@ -136,6 +137,8 @@ def text_runs(pdf_bytes: bytes, number: int) -> list[TextRun]:
             channels = [ctypes.c_uint() for _ in range(4)]
             success = pdfium.raw.FPDFText_GetFillColor(textpage.raw, index, *(ctypes.byref(c) for c in channels))
             rgb = tuple(c.value / 255 for c in channels[:3]) if success else (0., 0., 0.)
+            if colors and rgb != colors[-1]:
+                flush()
             chars.append(char)
             if box[2] > box[0] and box[3] > box[1]:
                 boxes.append(box)
@@ -155,12 +158,20 @@ def inspect_page(page, number: int) -> PageData:
         warnings.append("Nonstandard PDF user units are unsupported.")
     if page.get('/Group'):
         warnings.append("Transparency groups are unsupported.")
+    resources = page.get('/Resources')
+    fonts = resources.get_object().get('/Font') if resources else None
+    if fonts and any(font.get_object().get('/Subtype') == '/Type3' for font in fonts.get_object().values()):
+        warnings.append("Type 3 font graphics are unsupported.")
     stream = ContentStream(page.get_contents(), page.pdf)
     state = {"matrix": IDENTITY, "fill": (0., 0., 0.), "stroke": (0., 0., 0.), "width": 1.}
     stack, commands, points, elements = [], [], [], []
     current, start = (0., 0.), (0., 0.)
     allowed = PATH_OPS | PAINT_OPS | TEXT_OPS | {b"q", b"Q", b"cm", b"rg", b"RG", b"g", b"G", b"w", b"J", b"j", b"M", b"d", b"ri", b"i", b"n", b"BMC", b"BDC", b"EMC", b"MP", b"DP"}
     for index, (args, op) in enumerate(stream.operations):
+        if op == b"BMC" and args and str(args[0]) == "/CBAAdded":
+            warnings.append("This page already contains assistant cues; reprocess the original source instead.")
+        if op == b"Tr" and args and int(args[0]) != 0:
+            warnings.append("Stroked, invisible, or clipping text modes are unsupported.")
         if op not in allowed:
             warnings.append(f"Unsupported graphics operator {op.decode('ascii', errors='replace')}; page preserved unchanged.")
             continue
@@ -220,7 +231,7 @@ def inspect_page(page, number: int) -> PageData:
                                         state["fill"] if op not in {b"S", b"s"} else None,
                                         state["stroke"] if op in {b"S", b"s", b"B", b"B*", b"b", b"b*"} else None,
                                         state["width"] * max(math.hypot(a, b), math.hypot(c, d)),
-                                        0 if op.endswith(b"*") else 1))
+                                        0 if op.endswith(b"*") else 1, state["matrix"]))
             commands, points = [], []
         elif op == b"n":
             commands, points = [], []
@@ -244,7 +255,18 @@ def preservation_signature(page):
             return round(float(value), 5)
         return str(value)
     stream = ContentStream(page.get_contents(), page.pdf)
-    return [(op, normalize(args)) for args, op in stream.operations if op in PATH_OPS | TEXT_OPS]
+    signature, added_depth = [], 0
+    for args, op in stream.operations:
+        if op == b"BMC" and args and str(args[0]) == "/CBAAdded":
+            added_depth += 1
+        elif added_depth:
+            if op in {b"BMC", b"BDC"}:
+                added_depth += 1
+            elif op == b"EMC":
+                added_depth -= 1
+        elif op in PATH_OPS | TEXT_OPS:
+            signature.append((op, normalize(args)))
+    return signature
 
 
 def assert_preserved(before, after):

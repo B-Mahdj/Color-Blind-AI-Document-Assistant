@@ -11,7 +11,7 @@ from colorblind_assistant.pdf import inspect_page, single_page_bytes, assert_pre
 FIXTURE = Path(__file__).parent / "fixtures" / "Test_Document_Protanopia.pdf"
 
 
-def synthetic_pdf():
+def synthetic_pdf(occluder=False):
     out = BytesIO()
     pdf = canvas.Canvas(out, pagesize=(400, 400))
     pdf.setFillColorRGB(0, 0, 0)
@@ -26,6 +26,9 @@ def synthetic_pdf():
     pdf.rect(150, 60, 12, 12, fill=1, stroke=0)
     pdf.setFillColorRGB(0, 0, 0)
     pdf.drawString(170, 62, "Group Y")
+    if occluder:
+        pdf.setFillColorRGB(1, 1, 1)
+        pdf.rect(60, 140, 20, 20, fill=1, stroke=0)
     pdf.save()
     return out.getvalue()
 
@@ -73,6 +76,20 @@ class PDFTests(unittest.TestCase):
         page = PdfReader(BytesIO(synthetic_pdf())).pages[0]
         page.rotate(90)
         self.assertFalse(inspect_page(page, 1).supported)
+
+    def test_text_runs_keep_distinct_colors_separate(self):
+        output = BytesIO()
+        pdf = canvas.Canvas(output)
+        text = pdf.beginText(20, 20)
+        text.setFillColorRGB(1, 0, 0)
+        text.textOut("Red")
+        text.setFillColorRGB(0, 1, 0)
+        text.textOut("Green")
+        pdf.drawText(text)
+        pdf.save()
+        data = inspect_page(PdfReader(BytesIO(output.getvalue())).pages[0], 1)
+        self.assertEqual([item.text for item in data.text], ["Red", "Green"])
+        self.assertNotEqual(data.text[0].color, data.text[1].color)
 
 
 if __name__ == "__main__":

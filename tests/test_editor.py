@@ -1,13 +1,14 @@
 from io import BytesIO
 import unittest
 
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
+import numpy as np
 from reportlab.pdfgen import canvas
 
-from colorblind_assistant.colors import hex_color, simulated_image
+from colorblind_assistant.colors import simulated_image
 from colorblind_assistant.editor import apply_plan
 from colorblind_assistant.models import Action, CorrectionGroup, PagePlan
-from colorblind_assistant.pdf import assert_preserved, inspect_page, render, text_runs
+from colorblind_assistant.pdf import assert_preserved, inspect_page, render
 from tests.test_pdf import synthetic_pdf
 
 
@@ -92,6 +93,26 @@ class EditorTests(unittest.TestCase):
         result = apply_plan(self.page, self.data, legend_plan(self.data, color="blue"))
         self.assertFalse(result.groups)
         self.assertIn("hexadecimal", result.warnings[0])
+
+    def test_hatch_preserves_later_white_occluder(self):
+        self.page = PdfReader(BytesIO(synthetic_pdf(occluder=True))).pages[0]
+        data = inspect_page(self.page, 1)
+        result = apply_plan(self.page, data, legend_plan(data))
+        self.assertFalse(result.warnings, result.warnings)
+        pixels = np.asarray(render(result.pdf, scale=1))
+        self.assertTrue((pixels[241:259, 61:79] == 255).all())
+
+    def test_transformed_hatches_align_and_preserve_occlusion(self):
+        writer = PdfWriter()
+        page = writer.add_page(PdfReader(BytesIO(synthetic_pdf(occluder=True))).pages[0])
+        page.add_transformation((.75, 0, 0, .6, 20, 30))
+        data = inspect_page(page, 1)
+        result = apply_plan(page, data, legend_plan(data))
+        self.assertFalse(result.warnings, result.warnings)
+        assert_preserved(page, PdfReader(BytesIO(result.pdf)).pages[0])
+        pixels = np.asarray(render(result.pdf, scale=1))
+        self.assertTrue((pixels[276:284, 67:78] == 255).all())
+        self.assertTrue((pixels[290:305, 61:92, 0] > 100).any())
 
 
 if __name__ == "__main__":

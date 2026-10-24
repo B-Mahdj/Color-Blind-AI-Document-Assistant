@@ -7,7 +7,7 @@ from io import BytesIO
 import re
 
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import ArrayObject, ContentStream, FloatObject, NumberObject
+from pypdf.generic import ArrayObject, ContentStream, FloatObject, NameObject, NumberObject
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
@@ -84,12 +84,20 @@ def _mapping_note(group, changes, data, elements):
     if group.association == "ordered_scale":
         ordered = sorted((_numeric_text(elements[c["target_id"]], data), c["after"]) for c in recolors)
         low, high = parse_hex(ordered[0][1]), parse_hex(ordered[-1][1])
-        if _color_name(low) == _color_name(high):
-            direction = "darker" if luminance(high) < luminance(low) else "lighter"
-            return (f"Color key: {_color_name(low)} shades; {direction} means higher values. "
-                    "Original color names refer to the source. Numeric values are unchanged.")
-        return (f"Color key: low values = {ordered[0][1]}; high values = {ordered[-1][1]}. "
+        direction = "darker" if luminance(high) < luminance(low) else "lighter"
+        return (f"Color key: {direction} cells mean higher values. "
                 "Original color names refer to the source; numeric values are unchanged.")
+    if group.association == "direct_labels":
+        described = []
+        for change in recolors:
+            element = elements[change["target_id"]]
+            labels = [text for text in data.text if text.id in group.evidence_text_ids
+                      and contains(element.bbox, text.bbox, 2) and not re.fullmatch(r"[+\-\d.% ]+", text.text)]
+            if not labels:
+                break
+            described.append(f"{labels[0].text} = {_color_name(parse_hex(change['after']))}")
+        else:
+            return "Updated colors: " + "; ".join(dict.fromkeys(described)) + "."
     descriptions = []
     for old, new in mapping:
         ids = {change["target_id"] for change in recolors if change["before"] == old and change["after"] == new}
@@ -242,38 +250,36 @@ def _validate_group(group, data, edits, used, occupied):
                               "changes": changes, "metrics": metrics}, targets
 
 
-def _overlay(data, edits, labels):
+def _hatch_operations(element, config):
+    # Insert immediately after the original paint so later objects still occlude it.
+    a, b, c, d, e, f = element.matrix
+    determinant = a * d - b * c
+    if abs(determinant) < 1e-12:
+        raise ValueError("Cannot hatch a singular transformation.")
+    inverse = (d / determinant, -b / determinant, -c / determinant, a / determinant,
+               (c * f - d * e) / determinant, (b * e - a * f) / determinant)
+    operations = [([NameObject("/CBAAdded")], b"BMC"), ([], b"q"), (_float_args(inverse), b"cm")]
+    operations.extend((_float_args(values), command.encode()) for command, values in element.commands)
+    operations.extend([([], b"W*" if element.fill_rule == 0 else b"W"), ([], b"n")])
+    background = config.get("fill", element.fill)
+    ink = 0 if contrast((0, 0, 0), background) >= contrast((1, 1, 1), background) else 1
+    operations.extend([(_float_args((ink, ink, ink)), b"RG"), (_float_args((.6,)), b"w"),
+                       ([ArrayObject(), NumberObject(0)], b"d")])
+    left, bottom, right, top = element.bbox
+    span = top - bottom
+    offset = left - span
+    while offset <= right:
+        operations.extend([(_float_args((offset, bottom)), b"m"), (_float_args((offset + span, top)), b"l"), ([], b"S")])
+        if config["hatch"] == "cross":
+            operations.extend([(_float_args((offset, top)), b"m"), (_float_args((offset + span, bottom)), b"l"), ([], b"S")])
+        offset += 6
+    operations.extend([([], b"Q"), ([], b"EMC")])
+    return operations
+
+
+def _overlay(data, labels):
     out = BytesIO()
     pdf = canvas.Canvas(out, pagesize=(data.width, data.height), invariant=1)
-    for element in data.elements:
-        config = edits.get(element.id, {})
-        if "hatch" not in config:
-            continue
-        pdf.saveState()
-        path = pdf.beginPath()
-        for command, values in element.commands:
-            if command == "m":
-                path.moveTo(*values)
-            elif command == "l":
-                path.lineTo(*values)
-            elif command == "c":
-                path.curveTo(*values)
-            else:
-                path.close()
-        pdf.clipPath(path, stroke=0, fill=0, fillMode=element.fill_rule)
-        background = config.get("fill", element.fill)
-        ink = 0 if contrast((0, 0, 0), background) >= contrast((1, 1, 1), background) else 1
-        pdf.setStrokeColorRGB(ink, ink, ink)
-        pdf.setLineWidth(.6)
-        left, bottom, right, top = element.bbox
-        span = top - bottom
-        offset = left - span
-        while offset <= right:
-            pdf.line(offset, bottom, offset + span, top)
-            if config["hatch"] == "cross":
-                pdf.line(offset, top, offset + span, bottom)
-            offset += 6
-        pdf.restoreState()
     for label in labels:
         x, _, _, top = label["bbox"]
         pdf.setFillColorRGB(0, 0, 0)
@@ -306,10 +312,11 @@ def apply_plan(page, data: PageData, plan: PagePlan) -> EditResult:
     writer = PdfWriter()
     edited = writer.add_page(page)
     stream = ContentStream(edited.get_contents(), writer)
-    by_index = {item.paint_index: edits[item.id] for item in data.elements if item.id in edits}
+    by_index = {item.paint_index: item for item in data.elements if item.id in edits}
     operations = []
     for index, (args, op) in enumerate(stream.operations):
-        config = by_index.get(index)
+        element = by_index.get(index)
+        config = edits[element.id] if element else None
         if config:
             operations.append(([], b"q"))
             for channel, operator in (("fill", b"rg"), ("stroke", b"RG")):
@@ -320,11 +327,13 @@ def apply_plan(page, data: PageData, plan: PagePlan) -> EditResult:
                 operations.append(([ArrayObject([NumberObject(n) for n in pattern]), NumberObject(0)], b"d"))
         operations.append((args, op))
         if config:
+            if "hatch" in config:
+                operations.extend(_hatch_operations(element, config))
             operations.append(([], b"Q"))
     stream.operations = operations
     edited.replace_contents(stream)
-    if labels or any("hatch" in config for config in edits.values()):
-        overlay = PdfReader(BytesIO(_overlay(data, edits, labels)))
+    if labels:
+        overlay = PdfReader(BytesIO(_overlay(data, labels)))
         edited.merge_page(overlay.pages[0])
     out = BytesIO()
     writer.write(out)

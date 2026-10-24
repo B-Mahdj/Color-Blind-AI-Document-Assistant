@@ -96,6 +96,32 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("OPENAI_API_KEY", stderr.getvalue())
         self.assertFalse(self.output.exists())
 
+    def test_cli_completed_partial_and_invalid_exit_codes(self):
+        for revision, expected in ((False, 0), (True, 3)):
+            stdout, stderr = StringIO(), StringIO()
+            with patch("colorblind_assistant.cli.OpenAIReviewer", return_value=SampleReviewer(legend_plan, revision=revision)), redirect_stdout(stdout), redirect_stderr(stderr):
+                result = main([str(self.source), "--output-dir", str(self.output), "--overwrite"])
+            self.assertEqual(result, expected)
+            self.assertIn(json.loads(stdout.getvalue())["status"], {"completed", "partial"})
+            self.assertIn("Inspecting page", stderr.getvalue())
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit) as caught:
+            main([str(self.source), "--unknown-option"])
+        self.assertEqual(caught.exception.code, 2)
+
+    def test_encrypted_and_malformed_input(self):
+        self.source.write_bytes(b"not a PDF")
+        with self.assertRaises(Exception):
+            process_document(self.source, self.output, SampleReviewer())
+        self.assertFalse(self.output.exists())
+        writer = PdfWriter()
+        writer.add_page(PdfReader(BytesIO(synthetic_pdf())).pages[0])
+        writer.encrypt("test-password")
+        with self.source.open("wb") as handle:
+            writer.write(handle)
+        with self.assertRaisesRegex(ValueError, "Encrypted"):
+            process_document(self.source, self.output, SampleReviewer())
+        self.assertFalse(self.output.exists())
+
     def test_publish_failure_rolls_back_existing_outputs(self):
         process_document(self.source, self.output, SampleReviewer(legend_plan))
         before = {path.relative_to(self.output): path.read_bytes() for path in self.output.rglob("*") if path.is_file()}
@@ -111,6 +137,25 @@ class PipelineTests(unittest.TestCase):
 
         with patch("colorblind_assistant.pipeline.os.replace", side_effect=fail_once):
             with self.assertRaises(PermissionError):
+                process_document(self.source, self.output, SampleReviewer(legend_plan), overwrite=True)
+        after = {path.relative_to(self.output): path.read_bytes() for path in self.output.rglob("*") if path.is_file()}
+        self.assertEqual(before, after)
+
+    def test_interrupt_during_publish_rolls_back_existing_outputs(self):
+        process_document(self.source, self.output, SampleReviewer(legend_plan))
+        before = {path.relative_to(self.output): path.read_bytes() for path in self.output.rglob("*") if path.is_file()}
+        real_replace = os.replace
+        count = 0
+
+        def interrupt_once(source, destination):
+            nonlocal count
+            count += 1
+            if count == 9:
+                raise KeyboardInterrupt()
+            return real_replace(source, destination)
+
+        with patch("colorblind_assistant.pipeline.os.replace", side_effect=interrupt_once):
+            with self.assertRaises(KeyboardInterrupt):
                 process_document(self.source, self.output, SampleReviewer(legend_plan), overwrite=True)
         after = {path.relative_to(self.output): path.read_bytes() for path in self.output.rglob("*") if path.is_file()}
         self.assertEqual(before, after)
