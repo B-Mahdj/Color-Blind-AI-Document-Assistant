@@ -1,6 +1,6 @@
 # Project overview and skill migration plan
 
-Status: 24 October 2026. The CLI MVP exists and has been tested. The skill migration below is proposed work; no installable skill or plugin is included yet.
+Status: 24 October 2026. The CLI MVP exists and has been tested in `../cli/`. This `skill/` folder holds the upcoming migration work. The skill migration below is proposed work; no installable skill or plugin is included yet.
 
 ## What has been delivered
 
@@ -14,7 +14,7 @@ Status: 24 October 2026. The CLI MVP exists and has been tested. The skill migra
 | 6. Reader-led improvement | Revised palette guidance following a poor first live result; improved status colors and matching patterns. | `agent.py`, `tests/test_agent.py`, `QA.md` |
 | 7. Handoff | Windows setup, support limits, architecture diagram, publication review, and this migration plan. | `README.md`, `ARCHITECTURE.md`, `QA.md`, `.gitignore` |
 
-Python module paths in the table are under `colorblind_assistant/`. Changes were committed locally in coherent milestones for rollback.
+Python module paths in the table are under `../cli/colorblind_assistant/`; tests and CLI documentation are under `../cli/`. The shared `.gitignore` stays at the repository root. Changes were committed locally in coherent milestones for rollback.
 
 The current suite has 30 passing tests. Controlled test responses establish engine behavior; two separate live runs establish that the OpenAI integration works. The first live result failed reader review. The revised live result received positive qualitative feedback from one reader with protanopia, especially on color changes and hatching. It remains a partial correction: East/West bar mappings are uncertain, and final revisions need human review. Identification accuracy and reading time have not been measured.
 
@@ -37,7 +37,7 @@ flowchart LR
 
 `pipeline.py` owns ordering, failures, one review and at most one revision per page, and safe publication. `agent.py` supplies interpretation; it has no execution tools. `editor.py` accepts only identified elements and supported actions. `pdf.py` verifies original content before publication. Unsupported pages stay in the final document unchanged, with explicit warnings.
 
-Rendering uses PDFium; original vector edits use pypdf; label overlays use ReportLab; protanopia simulation uses DaltonLens. The exported document retains original selectable text and vector geometry. The detailed loop and function map are in [ARCHITECTURE.md](ARCHITECTURE.md).
+Rendering uses PDFium; original vector edits use pypdf; label overlays use ReportLab; protanopia simulation uses DaltonLens. The exported document retains original selectable text and vector geometry. The detailed loop and function map are in [the CLI architecture](../cli/ARCHITECTURE.md).
 
 Supported-page images and extracted text currently go to OpenAI. Local reports and previews also contain document content. `store=False` is an API request setting, not a claim that documents never leave the machine or that all service retention is disabled.
 

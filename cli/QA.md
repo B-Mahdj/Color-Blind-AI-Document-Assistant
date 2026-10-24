@@ -2,6 +2,8 @@
 
 Date: 24 October 2026.
 
+The CLI, fixtures, and local output folders now live under `cli/`. Historical run reports retain the absolute paths recorded when those runs were produced; the PDFs and preview images were moved without changing their contents. New runs record the new locations.
+
 ## Scope of the evidence
 
 The five-page sample in `output-controlled-qa/` uses controlled, deterministic responses from `tests/sample_responses.py`. No real OpenAI request generated that sample. A separate production run in `output-live-qa/` now records real OpenAI responses; its results and limitations are below.
@@ -72,3 +74,9 @@ The review checked the tracked working files and all reachable Git history, incl
 The sole tracked PDF is the supplied test fixture. Its extracted text and decoded page streams were checked; its metadata is generic, and it contains no attachments or document-level automatic action. The Git remote contains no embedded credentials. `.env`, generated outputs, environments, logs, and temporary processing folders are excluded from the intended publication; `.env.example` contains an empty key field.
 
 These are scoped publication checks, not a penetration test or a dependency-vulnerability audit. Pattern matching cannot prove that every possible secret format is absent. The documented unsupported PDF types and unresolved reader-validation issues remain unchanged.
+
+## CLI and skill folder separation
+
+The application, tests, generator, configuration, and local outputs were moved into `cli/`; the migration plan is in `skill/`. The repository's existing `.venv/` was retained and its editable installation refreshed for `cli/`.
+
+All 30 tests and the dependency consistency check passed from the new CLI directory. Both module and console entry points were checked, and the eight-page stress generator reproduced its existing PDF byte-for-byte. Local documentation links and nested ignore rules were verified. Runtime modules and test contents are unchanged, the private `.env` was preserved, and 89 generated files were verified unchanged during relocation. No new live API run was needed. The skill folder is preparation only; it contains no runnable skill yet.

@@ -1,6 +1,6 @@
 """Build a deliberately color-confusing, deterministic PDF for manual evaluation.
 
-Run from the repository root: python scripts/generate_stress_pdf.py
+Run from the cli directory: python scripts/generate_stress_pdf.py
 All data is synthetic. This generates an input, not an accessible output.
 """
 

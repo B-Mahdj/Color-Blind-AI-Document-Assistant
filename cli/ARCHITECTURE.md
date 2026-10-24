@@ -39,7 +39,7 @@ flowchart TD
 
 ## Files and functions for each step
 
-All Python modules below are inside `colorblind_assistant/`.
+This document and all CLI files live under the repository's `cli/` directory. All Python modules below are inside `cli/colorblind_assistant/`; supporting file paths are relative to `cli/` unless stated otherwise.
 
 | Step | File and main code | Responsibility |
 | --- | --- | --- |
@@ -69,7 +69,7 @@ All Python modules below are inside `colorblind_assistant/`.
 ## Supporting files
 
 - `pyproject.toml`: dependencies, package metadata, and the installed `colorblind-assistant` entry point.
-- `.env.example`: configuration template. The local `.env` is ignored through `.gitignore`.
+- `.env.example`: configuration template. The local `.env` is ignored through the repository-root `.gitignore`.
 - `README.md`: installation, Windows commands, outputs, exit codes, and support limits.
 - `QA.md`: automated, visual, live API, and reader-validation evidence.
 - `tests/test_pdf.py`: PDF inventory, transformations, preservation, and an independent synthetic fixture.
