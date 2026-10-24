@@ -53,10 +53,12 @@ The new run is saved separately in `output-live-qa-v2/`. All ten calls completed
 
 Page 3 now uses orange for "On track," blue for "At risk," purple for "Delayed," and dark gray for "Completed," with matching pie and legend colors. Both the normal page preview and the protanopia simulation are pixel-identical to page 3 of the reader-preferred controlled sample. The page passed AI review without warnings.
 
-The result is still **partial**, not a fully validated demo. East and West on page 1 remain unchanged because their category mappings are uncertain; the other bars and their matching legend symbols are corrected. Pages 1 and 2 received one revision and retain human-review warnings. Pages 3-5 passed AI review. Existing region labels remain important where colors look similar under simulation. Overall reader feedback on this new live output is still pending.
+The processing result remains **partial**. East and West on page 1 remain unchanged because their category mappings are uncertain; the other bars and their matching legend symbols are corrected. Pages 1 and 2 received one revision and retain their recorded review warnings. Pages 3-5 passed AI review. Existing region labels remain important where colors look similar under simulation.
+
+The reader with protanopia reviewed this revised live output and described it as "way better," specifically highlighting the color changes and the grid/hatching patterns. This is positive qualitative feedback on the actual live result from one reader. Identification accuracy and reading time were not measured, and the feedback does not resolve the East and West category mappings. The revised output's JSON and Markdown reports now record this feedback.
 
 ## Outstanding validation
 
 - Resolve or explicitly retain the East and West bar associations before presenting a fully corrected demo.
-- Have the reader compare identification tasks on the revised live output and record remaining difficulties; do not carry the earlier approval over to the whole new document.
+- Measure identification accuracy and reading time in a structured comparison if broader usability claims are needed.
 - Gather task-based feedback on additional documents when expanding support.

@@ -94,7 +94,7 @@ Tests run without an API key or network. They cover the five-page fixture, indep
 
 See [QA.md](QA.md) for visual review and positive qualitative reader feedback on the controlled sample. A separate live run with `gpt-6.1-sol` completed all ten API calls and produced `output-live-qa/`: four pages changed, one remained unchanged, and unresolved issues correctly yielded a partial result. The reader found that live output harder to read, especially "At risk" versus "Delayed"; it has not passed reader validation.
 
-The revised live result in `output-live-qa-v2/` restores the preferred status colors. Its entire page 3 preview, including its simulation, matches the first controlled sample exactly. It applies changes on all five pages while retaining the two ambiguous bars and review warnings. All 30 automated tests pass; reader feedback on the complete revised output remains pending.
+The revised live result in `output-live-qa-v2/` restores the preferred status colors. Its entire page 3 preview, including its simulation, matches the first controlled sample exactly. It applies changes on all five pages while retaining the two ambiguous bars and review warnings. All 30 automated tests pass. The reader with protanopia found the revised live output much better, especially the color changes and grid/hatching patterns. This is qualitative feedback from one reader; identification accuracy and reading time were not measured.
 
 ## Project layout
 
