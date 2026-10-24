@@ -308,7 +308,15 @@ class ExtendedPDFTests(unittest.TestCase):
         pdf.save()
         page = PdfReader(BytesIO(out.getvalue())).pages[0]
         data = inspect_page(page, 1)
-        colors = ['#005A9C','#A84400','#6B3C91','#303030','#365E30','#754B00','#007070','#733A60']
+        from colorblind_assistant.agent import DENSE_LINE_COLORS, categorical_color_guidance
+        from colorblind_assistant.colors import contrast, parse_hex, separation, simulated_rgb
+        colors = DENSE_LINE_COLORS
+        guidance = categorical_color_guidance(data)
+        self.assertEqual(len(guidance),32)
+        self.assertEqual({g['suggested_dash'] for g in guidance},{None,'dashed','dotted','dashdot'})
+        rgb = [parse_hex(c) for c in colors]
+        self.assertGreater(min(separation(a,b) for i,a in enumerate(rgb) for b in rgb[i+1:]),.35)
+        self.assertTrue(all(contrast(c,(1,1,1)) >= 3 and contrast(simulated_rgb(c),(1,1,1)) >= 3 for c in rgb))
         styles = [None,'dashed','dotted','dashdot']
         actions, legends = [], []
         for i in range(32):

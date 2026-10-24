@@ -195,9 +195,12 @@ def process_document(input_path, output_dir, agent, overwrite=False, progress=la
             corrected = render(result.pdf)
             after = PdfReader(BytesIO(result.pdf)).pages[0]
             assert_preserved(page, after)
-            destination = writer.pages[number - 1]
-            destination.replace_contents(after.get_contents().clone(writer))
-            destination[NameObject('/Resources')] = after['/Resources'].clone(writer)
+            if result.groups:
+                # The cloned document already owns unchanged pages and images.
+                # Reimporting them duplicates large bitmaps without changing any pixels.
+                destination = writer.pages[number - 1]
+                destination.replace_contents(after.get_contents().clone(writer))
+                destination[NameObject('/Resources')] = after['/Resources'].clone(writer)
             entry["groups"] = result.groups
             entry["warnings"] = list(dict.fromkeys(result.warnings))
             if entry["warnings"] and entry["status"] in {"corrected", "unchanged"}:
