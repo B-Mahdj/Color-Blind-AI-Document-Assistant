@@ -98,6 +98,8 @@ The revised live result in `output-live-qa-v2/` restores the preferred status co
 
 ## Project layout
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the Mermaid workflow and the files/functions responsible for each step.
+
 - `colorblind_assistant/pdf.py`: inventory, rendering, preservation checks.
 - `colorblind_assistant/editor.py` and `colors.py`: bounded edits and color checks.
 - `colorblind_assistant/agent.py` and `models.py`: OpenAI interface and structured decisions.
