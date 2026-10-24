@@ -66,6 +66,7 @@ This document and all CLI files live under the repository's `cli/` directory. Al
 | Change line style | `editor.py:apply_plan()` inserts dashed or dotted stroke settings. |
 | Add an existing source label | `editor.py:_place()` checks text, fills, protected objects, and sampled stroke intersections; `_overlay()` draws copied Latin text using ReportLab. |
 | Explain changed color references | `editor.py:_mapping_note()` generates a note from accepted changes; `_place()` and `_overlay()` position and draw it. |
+| Interpret a scientific caption legend | `editor.py:_validate_group()` verifies that known caption IDs name every recolored source color and requires a mapping note. |
 
 ## Supporting files
 
@@ -86,6 +87,8 @@ This document and all CLI files live under the repository's `cli/` directory. Al
 An unsupported page remains unchanged and is included in the complete export. An invalid correction group remains unchanged while other validated groups may proceed. API failures retain the affected original page and appear in the report; fatal configuration/API errors stop subsequent API calls. Document-level or preservation failures stop publication.
 
 Within an inspectable page, unsupported effects are recorded as protected objects. They remain placement obstacles and are never offered as editable targets. The report's coverage counts separate editable targets, original vector paints, eligible bitmap figures, and protected objects. Fragment bundles reduce model input; they do not assert that all same-color marks have the same meaning, and support recoloring only. Clipping bounds used for inventory filtering are conservative rectangles; original clipping paths remain in the PDF.
+
+`pdf.py:_text_clip_bounds()` follows PDFium text objects and their Form ancestors to identify clipped-away text. Stable text IDs and source context remain available, but hidden text does not block a new label or count as a visible direct label. Original line dashes are supplied in page points and used when validating same-color curve/legend matches.
 
 The bitmap path handles categorical flat colors only. A vision proposal must identify a readable embedded legend/direct labels. This does not provide OCR, segmentation of individual crossing bitmap curves, or scientific validation of a palette's meaning. Photos, continuous scales, masked images, and measurement colors need separate strategies.
 

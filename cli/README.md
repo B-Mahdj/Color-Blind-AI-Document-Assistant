@@ -69,7 +69,7 @@ Run again from the **original PDF** when changing settings. PDFs already contain
 
 ## How corrections work
 
-1. `pypdf` recursively inventories original paths, clipping, nested figures, and bitmap palettes; `pypdfium2` extracts text positions and renders page images. The model receives sampled curve trajectories as well as bounding boxes.
+1. `pypdf` recursively inventories original paths, clipping, nested figures, and bitmap palettes; `pypdfium2` extracts text positions and renders page images. The model receives sampled curve trajectories and original dash patterns as well as bounding boxes. Extracted text hidden by clipping is marked as source context and is excluded from placement obstacles.
 2. DaltonLens simulates protanopia using Viénot 1999 at severity `1.0`.
 3. OpenAI receives original page images, a simulated view, extracted text, stable element IDs, and a consistent categorical palette informed by reader feedback. Suggested colors are checked against existing text and line contrast; they do not establish category associations. Structured responses propose atomic groups of chart/legend corrections.
 4. Local code validates IDs, colors, legend consistency, text contrast in normal and simulated views, scale ordering, and available space. Unknown or uncertain groups remain unchanged. Neutral structural graphics cannot be edited.

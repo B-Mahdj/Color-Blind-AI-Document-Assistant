@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 from contextlib import closing
 from io import BytesIO
 import math
+import ctypes
 
 import pypdfium2 as pdfium
 from PIL import Image
@@ -60,10 +61,12 @@ class Element:
     kind: str = "vector"
     image_id: str | None = None
     members: list = field(default_factory=list)
+    dash: tuple = ()
+    dash_phase: float = 0
 
     def inventory(self):
         result = {key: value for key, value in vars(self).items()
-                  if key in {"id", "bbox", "fill", "stroke", "line_width", "kind", "image_id"}}
+                  if key in {"id", "bbox", "fill", "stroke", "line_width", "kind", "image_id", "dash", "dash_phase"}}
         if self.kind == "vector" and self.stroke is not None:
             samples = path_segments(self.commands)
             step = max(1, math.ceil(len(samples) / 24))
@@ -105,6 +108,7 @@ class TextRun:
     text: str
     bbox: tuple
     color: tuple
+    visible: bool = True
 
 
 @dataclass
@@ -157,15 +161,17 @@ def render(pdf_bytes: bytes, index=0, scale=1.5) -> Image.Image:
 def text_runs(pdf_bytes: bytes, number: int) -> list[TextRun]:
     result = []
     with pdfium.PdfDocument(pdf_bytes) as doc, closing(doc[0]) as page, closing(page.get_textpage()) as textpage:
-        chars, boxes, colors = [], [], []
+        chars, boxes, colors, visibility = [], [], [], []
+        clips = _text_clip_bounds(page)
 
         def flush():
             if boxes and "".join(chars).strip():
                 result.append(TextRun(f"p{number}-t{len(result) + 1:03d}",
-                                      "".join(chars).strip(), union(boxes), colors[0]))
+                                      "".join(chars).strip(), union(boxes), colors[0], any(visibility)))
             chars.clear()
             boxes.clear()
             colors.clear()
+            visibility.clear()
 
         for index in range(textpage.count_chars()):
             char = textpage.get_text_range(index, 1)
@@ -180,7 +186,6 @@ def text_runs(pdf_bytes: bytes, number: int) -> list[TextRun]:
                 if abs(box[1] - last[1]) > max(3, (last[3] - last[1]) * .6) or box[0] - last[2] > 8:
                     flush()
             # PDFium reports text fill colors without decoding embedded font glyphs ourselves.
-            import ctypes
             channels = [ctypes.c_uint() for _ in range(4)]
             success = pdfium.raw.FPDFText_GetFillColor(textpage.raw, index, *(ctypes.byref(c) for c in channels))
             rgb = tuple(c.value / 255 for c in channels[:3]) if success else (0., 0., 0.)
@@ -190,7 +195,42 @@ def text_runs(pdf_bytes: bytes, number: int) -> list[TextRun]:
             if box[2] > box[0] and box[3] > box[1]:
                 boxes.append(box)
                 colors.append(rgb)
+                obj = pdfium.raw.FPDFText_GetTextObject(textpage.raw, index)
+                address = ctypes.cast(obj, ctypes.c_void_p).value
+                clip = clips.get(address, (0,0,*page.get_size()))
+                mode = pdfium.raw.FPDFTextObj_GetTextRenderMode(obj) if obj else 0
+                visibility.append(mode not in {3,7} and intersects(box, clip))
         flush()
+    return result
+
+
+def _text_clip_bounds(page):
+    """Account for inherited Form clipping before treating extracted text as an obstacle.
+
+    PDF text extraction includes words hidden by crop/clip paths. Keep their IDs
+    and source content for provenance, but do not let them occupy blank space.
+    Bounds are conservative for non-rectangular clips.
+    """
+    result = {}
+    for obj in page.get_objects(filter=[pdfium.raw.FPDF_PAGEOBJ_TEXT]):
+        ancestry, current = [], obj
+        while current is not None:
+            ancestry.append(current)
+            current = current.container
+        matrix, bounds = IDENTITY, (0,0,*page.get_size())
+        for current in reversed(ancestry):
+            clip = pdfium.raw.FPDFPageObj_GetClipPath(current.raw)
+            for i in range(max(0, pdfium.raw.FPDFClipPath_CountPaths(clip))):
+                points = []
+                for j in range(max(0, pdfium.raw.FPDFClipPath_CountPathSegments(clip,i))):
+                    segment = pdfium.raw.FPDFClipPath_GetPathSegment(clip,i,j)
+                    x, y = ctypes.c_float(), ctypes.c_float()
+                    if pdfium.raw.FPDFPathSegment_GetPoint(segment,ctypes.byref(x),ctypes.byref(y)):
+                        points.append(point(matrix,x.value,y.value))
+                bounds = (clip_box(bounds,box_for(points)) if points else None) or (0,0,-1,-1)
+            if current.type == pdfium.raw.FPDF_PAGEOBJ_FORM:
+                matrix = compose(matrix,current.get_matrix().get())
+        result[ctypes.cast(obj.raw,ctypes.c_void_p).value] = bounds
     return result
 
 
@@ -293,6 +333,9 @@ def inspect_page(page, number: int) -> PageData:
                         state[key] = gs[key]
                 if '/LW' in gs:
                     state['width'] = float(gs['/LW'])
+                if '/D' in gs:
+                    state['dash'] = tuple(map(float,gs['/D'][0]))
+                    state['dash_phase'] = float(gs['/D'][1])
                 if any(k not in {'/Type', '/ca', '/CA', '/BM', '/SMask', '/TR', '/TR2', '/OP', '/op', '/OPM', '/LW', '/LC', '/LJ', '/ML', '/D', '/RI', '/FL', '/SA', '/SM', '/AIS', '/TK', '/BG2', '/UCR2'} for k in gs):
                     state['unsafe'] = 'Unsupported extended graphics setting.'
             elif op in {b'rg', b'RG', b'g', b'G', b'k', b'K', b'sc', b'SC', b'scn', b'SCN'}:
@@ -311,6 +354,8 @@ def inspect_page(page, number: int) -> PageData:
                 state[channel] = None
             elif op == b'w':
                 state['width'] = float(args[0])
+            elif op == b'd':
+                state['dash'], state['dash_phase'] = tuple(map(float,args[0])), float(args[1])
             elif op == b'Tr' and args and int(args[0]) >= 4:
                 state['unsafe'] = 'Text clipping.'
             elif op in PATH_OPS:
@@ -357,7 +402,9 @@ def inspect_page(page, number: int) -> PageData:
                         a, b, c, d, _, _ = state['matrix']
                         data.elements.append(Element(f'p{number}-v{len(data.elements)+1:03d}', index, bbox, commands[:], fill, stroke,
                                                      state['width'] * max(math.hypot(a, b), math.hypot(c, d)),
-                                                     0 if op.endswith(b'*') else 1, state['matrix'], path, not reason))
+                                                     0 if op.endswith(b'*') else 1, state['matrix'], path, not reason,
+                                                     dash=tuple(round(v*max(math.hypot(a,b),math.hypot(c,d)),3) for v in state.get('dash',())),
+                                                     dash_phase=state.get('dash_phase',0)*max(math.hypot(a,b),math.hypot(c,d))))
                         if reason:
                             protect(bbox, reason)
                 if pending_clip:
@@ -435,7 +482,7 @@ def compact_fragments(data):
         if item.kind != 'vector' or not colored(item) or max(item.bbox[2]-item.bbox[0], item.bbox[3]-item.bbox[1]) > 20:
             retained.append(item)
             continue
-        key = (item.stream_path, item.fill, item.stroke, round(item.line_width, 3),
+        key = (item.stream_path, item.fill, item.stroke, item.dash, round(item.line_width, 3),
                int(item.bbox[0] // 100), int(item.bbox[1] // 100))
         buckets.setdefault(key, []).append(item)
     for members in buckets.values():
@@ -445,7 +492,8 @@ def compact_fragments(data):
         else:
             retained.append(Element(first.id, first.paint_index, union([m.bbox for m in members]),
                                     [c for m in members for c in m.commands], first.fill, first.stroke,
-                                    first.line_width, first.fill_rule, first.matrix, first.stream_path, members=members))
+                                    first.line_width, first.fill_rule, first.matrix, first.stream_path, members=members,
+                                    dash=first.dash,dash_phase=first.dash_phase))
     data.elements = retained
 
 

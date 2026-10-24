@@ -8,7 +8,7 @@ from pypdf.generic import ArrayObject, ContentStream, DecodedStreamObject, Dicti
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
-from colorblind_assistant.editor import _mapping_note, _place, _segment_crosses, apply_plan
+from colorblind_assistant.editor import _color_name, _mapping_note, _place, _segment_crosses, apply_plan
 from colorblind_assistant.models import Action, CorrectionGroup, PagePlan
 from colorblind_assistant.pdf import Element, IDENTITY, PageData, TextRun, assert_preserved, inspect_page, render, single_page_bytes
 from colorblind_assistant.raster import palette, recolor_image
@@ -224,6 +224,45 @@ class ExtendedPDFTests(unittest.TestCase):
         self.assertIn('red -> orange',note)
         self.assertIn('blue -> purple',note)
         self.assertNotIn('bleue =',note)
+        self.assertEqual(_color_name((.91,.96,1.)), 'pale blue')
+
+    def test_hidden_text_is_not_a_placement_obstacle_in_transformed_forms(self):
+        out = BytesIO()
+        pdf = canvas.Canvas(out,pagesize=(500,500))
+        pdf.beginForm('words',0,0,200,100)
+        path = pdf.beginPath()
+        path.rect(0,0,100,100)
+        pdf.clipPath(path,stroke=0)
+        pdf.drawString(10,30,'Visible')
+        pdf.drawString(120,30,'Hidden')
+        pdf.endForm()
+        pdf.translate(70,90)
+        pdf.scale(1.2,1.2)
+        pdf.doForm('words')
+        pdf.save()
+        data = inspect_page(PdfReader(BytesIO(out.getvalue())).pages[0],1)
+        self.assertEqual({t.text:t.visible for t in data.text},{'Visible':True,'Hidden':False})
+        self.assertEqual([t.id for t in data.text],['p1-t001','p1-t002'])
+
+    def test_same_color_legends_must_match_the_original_dash(self):
+        out = BytesIO()
+        pdf = canvas.Canvas(out,pagesize=(400,400))
+        pdf.drawString(20,360,'Two categories')
+        pdf.setStrokeColorRGB(.8,.1,.1)
+        pdf.setDash(5,2)
+        pdf.line(50,100,300,200)
+        pdf.setDash(1,2)
+        pdf.line(50,60,80,60)
+        pdf.save()
+        page = PdfReader(BytesIO(out.getvalue())).pages[0]
+        data = inspect_page(page,1)
+        self.assertEqual(data.targets[0].inventory()['dash'],(5.,2.))
+        plan = plan_for(data,data.targets)
+        for action in plan.groups[0].actions:
+            action.channel = 'stroke'
+        result = apply_plan(page,data,plan)
+        self.assertFalse(result.groups)
+        self.assertIn('does not match',result.warnings[0])
 
     def test_nested_geometry_tampering_is_detected(self):
         out = BytesIO()

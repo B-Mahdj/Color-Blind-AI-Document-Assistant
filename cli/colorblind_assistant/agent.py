@@ -49,8 +49,13 @@ For ordered_scale, include all cells, recolor fills only, and preserve a strictl
 monotonic lightness order using numeric values already printed inside the cells.
 
 Objects inside clipped or nested PDF figures have page-space IDs and coordinates.
+Text marked visible=false is source context hidden by clipping; the reader cannot
+see it. It may supply evidence, but never treat it as a visible direct label.
 path_samples show the actual curve trajectory, not only its bounding box. For dense
 curves use consistent colors AND distinct line styles with their legend. Prefer
+matching both original color and supplied dash arrays when colors are reused.
+An empty dash array means a solid line; lengths are in page points.
+Prefer
 existing vector legend symbols over adding many labels; do not force 20-30 series
 into only six indistinguishable color/style combinations. Fragment bundles identify
 all paints edited together; they support recoloring only, not hatching or dashing.
@@ -124,7 +129,7 @@ def categorical_color_guidance(data):
             for element, channel in targets:
                 before = getattr(element, channel)
                 if channel == "fill":
-                    comparisons = [(text.color, 4.5) for text in data.text if intersects(element.bbox, text.bbox)]
+                    comparisons = [(text.color, 4.5) for text in data.text if text.visible and intersects(element.bbox, text.bbox)]
                 else:
                     comparisons = [((1, 1, 1), 3)]
                 for foreground, target_ratio in comparisons:
@@ -135,7 +140,7 @@ def categorical_color_guidance(data):
                 continue
             eligible = [element.id for element, channel in targets if channel == "fill" and element.kind == 'vector' and not element.members
                         and min(element.bbox[2] - element.bbox[0], element.bbox[3] - element.bbox[1]) >= 6
-                        and not any(intersects(element.bbox, text.bbox, 1) for text in data.text)]
+                        and not any(text.visible and intersects(element.bbox, text.bbox, 1) for text in data.text)]
             style = ("diagonal", "cross", None, None, "diagonal", "cross")[PREFERRED_COLORS.index(color)]
             suggestions.append({"source_color": source, "suggested_color": color,
                                 "targets": [{"target_id": element.id, "channel": channel} for element, channel in targets],

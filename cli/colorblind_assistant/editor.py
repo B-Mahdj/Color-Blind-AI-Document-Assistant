@@ -65,7 +65,7 @@ def _place(text, anchor, data, occupied, note=False, element=None):
         # Endpoints are stronger associations than the corner of a curve's large bounding box.
         endpoints = [segments[-1][1], segments[0][0]] if segments else []
         candidates = [(x + 8, y - height / 2) for x, y in endpoints] + candidates
-    obstacles = [item.bbox for item in data.text] + occupied + [item['bbox'] for item in data.protected]
+    obstacles = [item.bbox for item in data.text if item.visible] + occupied + [item['bbox'] for item in data.protected]
     strokes = []
     for item in data.elements:
         if item.fill is None and item.stroke is not None:
@@ -106,7 +106,7 @@ def _has_color_reference(data):
 
 
 def _numeric_text(element, data):
-    matches = [item for item in data.text if contains(element.bbox, item.bbox, 2) and re.fullmatch(r"[+-]?\d+(?:\.\d+)?%?", item.text.strip())]
+    matches = [item for item in data.text if item.visible and contains(element.bbox, item.bbox, 2) and re.fullmatch(r"[+-]?\d+(?:\.\d+)?%?", item.text.strip())]
     if len(matches) != 1:
         raise ValueError("An ordered scale needs one existing numeric label inside each cell.")
     return float(matches[0].text.rstrip("%"))
@@ -131,7 +131,7 @@ def _mapping_note(group, changes, data, elements):
             # a filled, individually labeled region supports this association.
             if element.fill is None or element.kind != 'vector':
                 break
-            labels = [text for text in data.text if text.id in group.evidence_text_ids
+            labels = [text for text in data.text if text.visible and text.id in group.evidence_text_ids
                       and contains(element.bbox, text.bbox, 2) and not re.fullmatch(r"[+\-\d.% ]+", text.text)]
             if len(labels) != 1:
                 break
@@ -143,20 +143,23 @@ def _mapping_note(group, changes, data, elements):
         ids = {change["target_id"] for change in recolors if change["before"] == old and change["after"] == new}
         cues = sorted({f"{change['style']} {'hatch' if change['kind'] == 'hatch' else 'line'}"
                        for change in changes if change["kind"] in {"hatch", "dash"} and change["target_id"] in ids})
-        descriptions.append(f"{_color_name(parse_hex(old))} -> {_color_name(parse_hex(new))}" +
+        old_name = _color_name(parse_hex(old))
+        if len({a for a,_ in mapping if _color_name(parse_hex(a)) == old_name}) > 1:
+            old_name += f' ({old})'
+        descriptions.append(f"{old_name} -> {_color_name(parse_hex(new))}" +
                             (f" ({', '.join(cues)})" if cues else ""))
     return "Color key: " + "; ".join(dict.fromkeys(descriptions)) + "."
 
 
 def _color_name(rgb):
     hue, saturation, value = colorsys.rgb_to_hsv(*rgb)
-    if saturation < .12:
+    if max(rgb)-min(rgb) < .025:
         return "black" if value < .25 else "white" if value > .9 else "gray"
     degrees = hue * 360
     for boundary, name in ((15, "red"), (45, "orange"), (70, "yellow"), (165, "green"),
                            (195, "cyan"), (255, "blue"), (290, "purple"), (345, "pink"), (361, "red")):
         if degrees < boundary:
-            return name
+            return ('pale ' if saturation < .15 and value > .85 else '') + name
 
 
 def _validate_group(group, data, edits, used, occupied):
@@ -198,7 +201,7 @@ def _validate_group(group, data, edits, used, occupied):
             source_colors = [getattr(elements[item], action.channel) for action in group.actions if action.kind == 'recolor'
                              and action.channel in {'fill','stroke'} for item in action.target_ids]
             if not source_colors or any(c is None or not any(re.search(r'\b'+word+r's?\b',legend_text)
-                       for word in aliases.get(_color_name(c), ())) for c in source_colors):
+                       for word in aliases.get(_color_name(c).removeprefix('pale '), ())) for c in source_colors):
                 raise ValueError('A textual legend must explicitly name every recolored source color.')
         elif not group.legend_ids or not set(group.legend_ids) < targets:
             raise ValueError("Legend groups must include their legend symbols and chart elements together.")
@@ -238,7 +241,7 @@ def _validate_group(group, data, edits, used, occupied):
                         raise ValueError('Bitmap recolor would reduce contrast on a white chart background.')
                 elif action.channel == "fill":
                     for text in data.text:
-                        if intersects(element.bbox, text.bbox):
+                        if text.visible and intersects(element.bbox, text.bbox):
                             floor = min(4.5, contrast(text.color, before))
                             if contrast(text.color, after) + .05 < floor:
                                 raise ValueError(f"Recolor would reduce text contrast near {text.id}.")
@@ -254,7 +257,7 @@ def _validate_group(group, data, edits, used, occupied):
                     raise ValueError("Hatching requires a filled shape and a supported style.")
                 if min(element.bbox[2] - element.bbox[0], element.bbox[3] - element.bbox[1]) < 6:
                     raise ValueError("The target is too small for a readable hatch.")
-                if any(intersects(element.bbox, text.bbox, 1) for text in data.text):
+                if any(text.visible and intersects(element.bbox, text.bbox, 1) for text in data.text):
                     raise ValueError("Hatching might obscure existing text.")
                 config["hatch"] = action.style
                 record["style"] = action.style
@@ -287,13 +290,14 @@ def _validate_group(group, data, edits, used, occupied):
             candidates = [elements[item] for item in targets - set(group.legend_ids)]
             if not any(((candidate.fill is not None and candidate.fill == legend.fill)
                         or (candidate.stroke is not None and candidate.stroke == legend.stroke))
+                       and (candidate.fill is not None or legend.fill is not None or candidate.dash == legend.dash)
                        and local.get(candidate.id) == legend_config for candidate in candidates):
                 raise ValueError("A legend's new encoding does not match a corresponding chart element.")
     if group.association == "direct_labels":
         explicit_label = any(change["kind"] == "label" for change in changes)
         if not explicit_label:
             for identifier in targets:
-                if not any(contains(elements[identifier].bbox, texts[item].bbox, 3) for item in group.evidence_text_ids):
+                if not any(texts[item].visible and contains(elements[identifier].bbox, texts[item].bbox, 3) for item in group.evidence_text_ids):
                     raise ValueError("Directly labeled targets need an existing contained label or a new source label.")
     pairs = []
     for change in changes:
