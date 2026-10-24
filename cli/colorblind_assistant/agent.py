@@ -157,7 +157,7 @@ class OpenAIReviewer:
         if not api_key or not api_key.strip():
             raise AgentError("OPENAI_API_KEY is missing. Set it in .env in the current directory or in the environment before running.", fatal=True)
         self.model = model
-        self.client = client or OpenAI(api_key=api_key, timeout=60, max_retries=1)
+        self.client = client or OpenAI(api_key=api_key, timeout=180, max_retries=1)
         self.calls = []
 
     def _request(self, stage, data, images, extra, schema):
@@ -187,6 +187,8 @@ class OpenAIReviewer:
                   "seconds": round(time.monotonic() - started, 2)}
         if response.usage:
             record["usage"] = response.usage.model_dump()
+        if response.incomplete_details:
+            record['incomplete_reason'] = response.incomplete_details.reason
         self.calls.append(record)
         if response.status != "completed" or response.output_parsed is None:
             raise AgentError("OpenAI response was refused, incomplete, or missing structured output.")

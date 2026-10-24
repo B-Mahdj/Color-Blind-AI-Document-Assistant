@@ -82,7 +82,7 @@ Simulation distances are ranking heuristics. Numeric geometry checks cannot prov
 
 ## Data and API behavior
 
-OpenAI analysis is enabled by default. Supported pages' rendered content and extracted text leave the machine. Calls use `store=False`, a 60-second request timeout, and at most one SDK retry per call. Each supported page uses one proposal call and, if a correction was proposed, one review call. No tools, code execution, or filesystem access are exposed to the model. Instructions inside a document are treated as untrusted content.
+OpenAI analysis is enabled by default. Supported pages' rendered content and extracted text leave the machine. Calls use `store=False`, a 180-second request timeout for large figure inventories, and at most one SDK retry per call. Each supported page with editable targets uses one proposal call and, if a correction was proposed, one review call. Incomplete-response reasons appear in call diagnostics. No tools, code execution, or filesystem access are exposed to the model. Instructions inside a document are treated as untrusted content.
 
 Local reports contain document text, absolute file paths, and usage metadata; keep them as private as the source document. API error bodies and credentials are not copied into reports. Access to the default model must be verified with your own API account.
 
