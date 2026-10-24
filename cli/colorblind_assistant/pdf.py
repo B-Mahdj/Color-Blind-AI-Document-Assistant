@@ -74,14 +74,18 @@ class Element:
         if self.members:
             result["paint_count"] = len(self.members)
             result["grouping"] = "Same-color path fragments; edits affect every fragment in this bounded region."
+        result['hatch_size_eligible'] = (self.kind == 'vector' and not self.members and self.fill is not None
+                                        and min(self.bbox[2]-self.bbox[0], self.bbox[3]-self.bbox[1]) >= 6)
         return result
 
 
-def path_segments(commands):
+def path_segments(commands, close=False):
     """Sample cubic curves for placement, retaining subpath boundaries."""
     segments, current, start = [], (0., 0.), (0., 0.)
     for op, values in commands:
         if op == "m":
+            if close and current != start:
+                segments.append((current, start))
             current = start = tuple(values)
         elif op in {"l", "h"}:
             end = start if op == "h" else tuple(values)
@@ -94,7 +98,52 @@ def path_segments(commands):
                 end = tuple((1-t)**3*p0[j] + 3*(1-t)**2*t*p1[j] + 3*(1-t)*t*t*p2[j] + t**3*p3[j] for j in (0, 1))
                 segments.append((current, end))
                 current = end
+    if close and current != start:
+        segments.append((current, start))
     return segments
+
+
+def fill_intersects(element, box, padding=0):
+    """Test actual filled paths, including holes and disconnected map fragments."""
+    if not intersects(element.bbox, box, padding):
+        return False
+    if element.members:
+        return any(fill_intersects(member, box, padding) for member in element.members)
+    if not element.commands:
+        return True
+    left, bottom, right, top = box
+    box = (left-padding, bottom-padding, right+padding, top+padding)
+    edges = path_segments(element.commands, close=True)
+    if any(segment_crosses(box, a, b, 0) for a, b in edges):
+        return True
+    x, y = (left+right)/2, (bottom+top)/2
+    winding = 0
+    for (ax, ay), (bx, by) in edges:
+        side = (bx-ax)*(y-ay) - (x-ax)*(by-ay)
+        if ay <= y < by and side > 0:
+            winding += 1
+        elif by <= y < ay and side < 0:
+            winding -= 1
+    return bool(winding % 2 if element.fill_rule == 0 else winding)
+
+
+def segment_crosses(box, a, b, padding):
+    """Liang-Barsky clipping against a padded rectangle."""
+    l, bottom, r, top = box
+    l, bottom, r, top = l-padding, bottom-padding, r+padding, top+padding
+    lo, hi = 0., 1.
+    dx, dy = b[0]-a[0], b[1]-a[1]
+    for p, q in ((-dx, a[0]-l), (dx, r-a[0]), (-dy, a[1]-bottom), (dy, top-a[1])):
+        if abs(p) < 1e-12:
+            if q < 0:
+                return False
+        elif p < 0:
+            lo = max(lo, q/p)
+        else:
+            hi = min(hi, q/p)
+        if lo > hi:
+            return False
+    return True
 
 
 def colored(element):
@@ -132,7 +181,7 @@ class PageData:
                 "coordinates": "PDF points; origin at bottom left",
                 "elements": [item.inventory() for item in self.targets],
                 "text": [asdict(item) for item in self.text],
-                "images": [{key: value for key, value in item.items() if key in {"id", "bbox", "width", "height", "palette_ids"}}
+                "images": [{key: value for key, value in item.items() if key in {"id", "bbox", "width", "height", "palette_ids", "palette_mode"}}
                            for item in self.images.values()],
                 "protected_objects": self.protected[:80]}
 
@@ -439,8 +488,11 @@ def inspect_page(page, number: int) -> PageData:
                 protect(state['clip'], 'Shading or inline image retained unchanged.')
             elif op not in TEXT_OPS | {b'J', b'j', b'M', b'd', b'ri', b'i', b'BMC', b'BDC', b'EMC', b'MP', b'DP', b'BX', b'EX'}:
                 state['unsafe'] = f'Unsupported graphics operator {op!r}.'
-        if stack:
+        if stack and not path:
             raise ValueError('Unbalanced graphics state.')
+        if stack:
+            # A Form invocation restores its caller's graphics state on return.
+            data.warnings.append('Trailing saved graphics states are isolated inside a Form; original operators retained.')
 
     state = {'matrix': IDENTITY, 'fill': (0.,0.,0.), 'stroke': (0.,0.,0.), 'width': 1.,
              'fill_space': '/DeviceGray', 'stroke_space': '/DeviceGray', 'clip': (0,0,width,height)}

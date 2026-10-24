@@ -9,7 +9,7 @@ description = "Preserve PDF text and geometry while improving protanopia readabi
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
-  "pypdf>=6.0,<7",
+  "pypdf>=6.18,<7",
   "pypdfium2>=4.30,<6",
   "reportlab>=4.2,<5",
   "Pillow>=10,<13",

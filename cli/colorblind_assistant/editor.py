@@ -13,7 +13,8 @@ from reportlab.pdfgen import canvas
 
 from .colors import color_metrics, contrast, hex_color, luminance, parse_hex, separation, simulated_rgb
 from .models import PagePlan
-from .pdf import PageData, assert_preserved, contains, intersects, path_segments, single_page_bytes, union
+from .pdf import PageData, assert_preserved, contains, fill_intersects, intersects, path_segments, single_page_bytes, union
+from .pdf import segment_crosses as _segment_crosses
 
 
 @dataclass
@@ -101,25 +102,6 @@ def _same_dash(first, second):
     return all(abs(x/a-y/b) <= .03 for x,y in zip(first.dash,second.dash))
 
 
-def _segment_crosses(box, a, b, padding):
-    """Liang-Barsky clipping: a diagonal's bounding box is not an occupied rectangle."""
-    l, bottom, r, top = box
-    l, bottom, r, top = l-padding, bottom-padding, r+padding, top+padding
-    lo, hi = 0., 1.
-    dx, dy = b[0]-a[0], b[1]-a[1]
-    for p, q in ((-dx, a[0]-l), (dx, r-a[0]), (-dy, a[1]-bottom), (dy, top-a[1])):
-        if abs(p) < 1e-12:
-            if q < 0:
-                return False
-        elif p < 0:
-            lo = max(lo, q/p)
-        else:
-            hi = min(hi, q/p)
-        if lo > hi:
-            return False
-    return True
-
-
 def _has_color_reference(data):
     return any(re.search(r"\b(red|green|blue|orange|yellow|purple|pink|brown|cyan|magenta|black|white|gray|grey|rouge|vert[e]?|bleu[e]?|jaune|violet[te]*|rose|marron|noir[e]?|blanc[he]*|gris[e]?)s?\b", item.text, re.I) for item in data.text)
 
@@ -196,7 +178,7 @@ def _validate_group(group, data, edits, used, occupied):
     texts = {item.id: item for item in data.text}
     if group.uncertain:
         raise ValueError("The model marked the association uncertain.")
-    if not group.evidence_text_ids and group.association != 'image_palette':
+    if not group.evidence_text_ids and group.association not in {'image_palette', 'image_ordered'}:
         raise ValueError('Vector groups need source text evidence.')
     if any(item not in texts for item in group.evidence_text_ids):
         raise ValueError("Unknown source text ID.")
@@ -206,13 +188,24 @@ def _validate_group(group, data, edits, used, occupied):
     if any(not elements[item].editable for item in targets):
         raise ValueError('A protected object cannot be edited.')
     raster_targets = {item for item in targets if elements[item].kind == 'raster_palette'}
-    if group.association == 'image_palette':
+    if group.palette_order and group.association != 'image_ordered':
+        raise ValueError('Palette order is only valid for an ordered bitmap scale.')
+    if group.association in {'image_palette', 'image_ordered'}:
         if targets != raster_targets or len({elements[item].image_id for item in targets}) != 1:
             raise ValueError('An image palette group must refer to one bitmap and its embedded legend.')
         if any(action.kind != 'recolor' or action.channel != 'fill' for action in group.actions):
             raise ValueError('Bitmap palette targets support recolor fill actions only.')
-    elif raster_targets:
-        raise ValueError('Bitmap targets require the categorical image_palette association.')
+    elif raster_targets and group.association != 'legend':
+        raise ValueError('Bitmap targets require an image or matched-legend association.')
+    for item in raster_targets:
+        figure = data.images[elements[item].image_id]
+        if figure['palette_mode'] == 'ordered_only' and group.association != 'image_ordered':
+            raise ValueError('A continuous bitmap palette requires an ordered scale.')
+        if any(elements[other].image_id == elements[item].image_id for other in used):
+            raise ValueError('All edits to one bitmap must be in the same atomic group.')
+    if group.association == 'image_ordered':
+        if set(group.palette_order) != targets or len(group.palette_order) != len(targets) or len(targets) < 2:
+            raise ValueError('Ordered bitmap colors need unique source IDs in ascending value order.')
     if targets & used:
         raise ValueError("Another accepted group already edits this element.")
     text_legend = bool(group.legend_ids) and set(group.legend_ids) <= texts.keys()
@@ -255,6 +248,8 @@ def _validate_group(group, data, edits, used, occupied):
                 raise ValueError("Duplicate or conflicting actions in a group.")
             touched.add(key)
             record = {"kind": action.kind, "target_id": identifier}
+            if element.kind == 'raster_palette' and (action.kind != 'recolor' or action.channel != 'fill'):
+                raise ValueError('Bitmap palette targets support recolor fill actions only.')
             if action.kind == "recolor":
                 if action.channel not in {"fill", "stroke"} or action.style or action.source_text_id or action.color is None:
                     raise ValueError("Recolor requires only a channel and RGB color.")
@@ -265,20 +260,22 @@ def _validate_group(group, data, edits, used, occupied):
                 if hex_color(before) == hex_color(after):
                     raise ValueError("A recolor action must change the color.")
                 config[action.channel] = after
+                if group.association == 'image_ordered':
+                    config['ordered_rank'] = group.palette_order.index(identifier)
                 record.update(channel=action.channel, before=hex_color(before), after=hex_color(after))
-                if element.kind == 'raster_palette':
+                if element.kind == 'raster_palette' and group.association != 'image_ordered':
                     if contrast(after, (1, 1, 1)) + .05 < min(3, contrast(before, (1, 1, 1))):
                         raise ValueError('Bitmap recolor would reduce contrast on a white chart background.')
-                elif action.channel == "fill":
+                elif action.channel == "fill" and element.kind == 'vector':
                     for text in data.text:
-                        if text.visible and intersects(element.bbox, text.bbox):
+                        if text.visible and fill_intersects(element, text.bbox, .5):
                             floor = min(4.5, contrast(text.color, before))
                             if contrast(text.color, after) + .05 < floor:
                                 raise ValueError(f"Recolor would reduce text contrast near {text.id}.")
                             simulated_floor = min(4.5, contrast(simulated_rgb(text.color), simulated_rgb(before)))
                             if contrast(simulated_rgb(text.color), simulated_rgb(after)) + .05 < simulated_floor:
                                 raise ValueError(f"Recolor would reduce simulated text contrast near {text.id}.")
-                elif contrast(after, (1, 1, 1)) + .05 < min(3, contrast(before, (1, 1, 1))):
+                elif action.channel == 'stroke' and contrast(after, (1, 1, 1)) + .05 < min(3, contrast(before, (1, 1, 1))):
                     raise ValueError("Recolor would reduce line contrast on the page background.")
             elif action.kind == "hatch":
                 if element.members:
@@ -287,7 +284,7 @@ def _validate_group(group, data, edits, used, occupied):
                     raise ValueError("Hatching requires a filled shape and a supported style.")
                 if min(element.bbox[2] - element.bbox[0], element.bbox[3] - element.bbox[1]) < 6:
                     raise ValueError("The target is too small for a readable hatch.")
-                if any(text.visible and intersects(element.bbox, text.bbox, 1) for text in data.text):
+                if any(text.visible and fill_intersects(element, text.bbox, 1) for text in data.text):
                     raise ValueError("Hatching might obscure existing text.")
                 config["hatch"] = action.style
                 record["style"] = action.style
@@ -318,8 +315,8 @@ def _validate_group(group, data, edits, used, occupied):
             legend = elements[legend_id]
             legend_config = local[legend_id]
             candidates = [elements[item] for item in targets - set(group.legend_ids)]
-            if not any(((candidate.fill is not None and candidate.fill == legend.fill)
-                        or (candidate.stroke is not None and candidate.stroke == legend.stroke))
+            if not any(((candidate.fill is not None and legend.fill is not None and max(abs(a-b) for a,b in zip(candidate.fill,legend.fill)) <= 12/255)
+                        or (candidate.stroke is not None and legend.stroke is not None and max(abs(a-b) for a,b in zip(candidate.stroke,legend.stroke)) <= 12/255))
                        and (candidate.fill is not None or legend.fill is not None or _same_dash(candidate,legend))
                        and local.get(candidate.id) == legend_config for candidate in candidates):
                 raise ValueError("A legend's new encoding does not match a corresponding chart element.")
@@ -343,10 +340,16 @@ def _validate_group(group, data, edits, used, occupied):
         deltas = [b[1] - a[1] for a, b in zip(entries, entries[1:]) if a[0] != b[0]]
         if not deltas or not (all(d > .001 for d in deltas) or all(d < -.001 for d in deltas)):
             raise ValueError("The proposed scale does not preserve a strict lightness ordering of existing values.")
+    if group.association == 'image_ordered':
+        ordered = [local[item]['fill'] for item in group.palette_order]
+        for transform in (lambda c: c, simulated_rgb):
+            levels = [luminance(transform(color)) for color in ordered]
+            if not all(a-b > .001 for a,b in zip(levels, levels[1:])):
+                raise ValueError('Ordered bitmap colors must become strictly darker as source values increase, also under simulation.')
     metrics = color_metrics(pairs)
     if (metrics["minimum_separation_before"] is not None
             and metrics["minimum_separation_after"] + .02 < metrics["minimum_separation_before"]
-            and group.association != "ordered_scale"
+            and group.association not in {"ordered_scale", "image_ordered"}
             and not any(change["kind"] in {"label", "hatch", "dash"} for change in changes)):
         raise ValueError("The palette reduces simulated separation without an additional cue.")
     note = _mapping_note(group, changes, data, elements)
@@ -432,13 +435,17 @@ def _edit_objects(edited, writer, data, edits):
                 xobjects[name] = writer._add_object(clone)
                 args = [name]
             if (path, index) in raster_edits:
-                from .raster import image_stream, recolor_image
+                from .raster import image_stream, native_replacement, recolor_image
                 targets = raster_edits[(path, index)]
                 image = data.images[targets[0][0].image_id]
+                ordered = 'ordered_rank' in targets[0][1]
+                if ordered:
+                    targets = sorted(targets, key=lambda t: t[1]['ordered_rank'])
                 mappings = [(tuple(round(c*255) for c in item.fill), tuple(round(c*255) for c in config['fill'])) for item, config in targets]
-                replacement, _ = recolor_image(image['image'], mappings, image['colors'])
+                replacement, _ = recolor_image(image['image'], mappings, image['colors'], ordered=ordered)
+                replacement = native_replacement(image, replacement)
                 name = _object_name(xobjects, index)
-                xobjects[name] = writer._add_object(image_stream(replacement))
+                xobjects[name] = writer._add_object(image_stream(replacement, image['color_space'].clone(writer)))
                 args = [name]
             element, config = vector_edits.get((path, index), (None, None))
             if config:

@@ -7,11 +7,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from pypdf import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter, get_configuration
 
 from colorblind_assistant.cli import main
 from colorblind_assistant.models import PagePlan
-from colorblind_assistant.pdf import assert_preserved
+from colorblind_assistant.pdf import assert_preserved, inspect_page
 from colorblind_assistant.pipeline import process_document
 from tests.sample_responses import SampleReviewer
 from tests.test_editor import legend_plan
@@ -110,6 +110,23 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(agent.calls), 2)
         self.assertEqual(report["status"], "partial")
         self.assertIn("human review", report["pages"][0]["warnings"][-1])
+
+    def test_rejected_revision_does_not_claim_it_was_applied(self):
+        agent = SampleReviewer(legend_plan, revision=True)
+        from colorblind_assistant.models import PageReview
+        agent.review = lambda *args: PageReview(approved=False, revised_plan=PagePlan(groups=[],warnings=[]),warnings=[])
+        report = process_document(self.source,self.output,agent)
+        self.assertFalse(report['pages'][0]['groups'])
+        self.assertIn('no correction passed',report['pages'][0]['warnings'][-1])
+
+    def test_parser_budget_is_bounded_and_restored(self):
+        previous = get_configuration().stream_parsing_work_maximum_count
+        def inspect(*args):
+            self.assertEqual(get_configuration().stream_parsing_work_maximum_count,6_000_000)
+            return inspect_page(*args)
+        with patch('colorblind_assistant.pipeline.inspect_page',side_effect=inspect):
+            process_document(self.source,self.output,SampleReviewer(legend_plan))
+        self.assertEqual(get_configuration().stream_parsing_work_maximum_count,previous)
 
     def test_missing_key_and_cli_json(self):
         stdout, stderr = StringIO(), StringIO()

@@ -184,7 +184,7 @@ class ExtendedPDFTests(unittest.TestCase):
         self.assertFalse(rejected.groups)
         self.assertIn('explicitly name',rejected.warnings[0])
 
-    def test_profiled_bitmaps_are_protected_until_color_managed(self):
+    def test_profiled_bitmaps_are_color_managed_and_profile_is_retained(self):
         from PIL import ImageCms
         out = BytesIO()
         pdf = canvas.Canvas(out,pagesize=(400,400))
@@ -198,8 +198,16 @@ class ExtendedPDFTests(unittest.TestCase):
         obj = next(iter(page['/Resources']['/XObject'].values())).get_object()
         obj[NameObject('/ColorSpace')] = ArrayObject([NameObject('/ICCBased'),writer._add_object(profile)])
         data = inspect_page(page,1)
-        self.assertFalse(data.images)
-        self.assertIn('color-managed',data.warnings[0])
+        self.assertEqual(len(data.images), 1, data.warnings)
+        result = apply_plan(page, data, plan_for(data, data.targets, 'image_palette'))
+        self.assertTrue(result.groups, result.warnings)
+        after = PdfReader(BytesIO(result.pdf)).pages[0]
+        replacement = next(image for image in after.images if image.name.startswith('CBA'))
+        edited = replacement.indirect_reference.get_object()
+        self.assertEqual(edited['/ColorSpace'][0], '/ICCBased')
+        self.assertEqual(edited['/ColorSpace'][1].get_object().get_data(), profile.get_data())
+        self.assertEqual(replacement.image.getpixel((50,50)), (0,90,156))
+        assert_preserved(page, after)
 
     def test_placement_uses_curve_paths_and_accepts_french_labels(self):
         self.assertFalse(_segment_crosses((20, 70, 40, 90), (0,0), (100,100), 2))

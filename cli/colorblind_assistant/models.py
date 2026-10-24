@@ -22,7 +22,8 @@ class CorrectionGroup(StrictModel):
     id: str = Field(min_length=1, max_length=80)
     reason: str = Field(min_length=1, max_length=1000)
     evidence_text_ids: list[str] = Field(max_length=100)
-    association: Literal["legend", "direct_labels", "ordered_scale", "image_palette"]
+    association: Literal["legend", "direct_labels", "ordered_scale", "image_palette", "image_ordered"]
+    palette_order: list[str] = Field(default_factory=list, max_length=100)
     legend_ids: list[str] = Field(max_length=100)
     uncertain: bool
     actions: list[Action] = Field(min_length=1, max_length=100)

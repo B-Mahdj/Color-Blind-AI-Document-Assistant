@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 import tempfile
 
-from pypdf import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter, apply_configuration
 from pypdf.generic import NameObject
 
 from .agent import AgentError
@@ -112,6 +112,7 @@ def _publish(stage, output, source, overwrite):
         raise
 
 
+@apply_configuration(stream_parsing_work_maximum_count=6_000_000)
 def process_document(input_path, output_dir, agent, overwrite=False, progress=lambda message: None):
     source = Path(input_path).expanduser().resolve(strict=True)
     output = Path(output_dir).expanduser().resolve()
@@ -170,16 +171,19 @@ def process_document(input_path, output_dir, agent, overwrite=False, progress=la
                 else:
                     progress(f"[{number}/{len(reader.pages)}] Requesting AI proposal")
                     plan = agent.propose(data, original)
+                    entry['decisions'] = {'proposal': plan.model_dump()}
                     result = apply_plan(page, data, plan)
                     if plan.groups:
                         progress(f"[{number}/{len(reader.pages)}] Reviewing validated candidate")
                         review = agent.review(data, original, render(result.pdf), result.groups, result.warnings)
+                        entry['decisions']['review'] = review.model_dump()
                         if review.approved:
                             result.warnings.extend(review.warnings)
                         elif review.revised_plan is not None:
                             result = apply_plan(page, data, review.revised_plan)
                             result.warnings.extend(f"Review of the initial candidate: {warning}" for warning in review.warnings)
-                            result.warnings.append("One revision applied after AI review; its final appearance still needs human review.")
+                            result.warnings.append("One revision accepted after AI review; its final appearance still needs human review."
+                                                   if result.groups else "One revision evaluated after AI review; no correction passed validation.")
                         else:
                             result = EditResult(original_pdf, [], [*result.warnings, *review.warnings,
                                                                   "AI review did not approve the candidate; page preserved unchanged."])

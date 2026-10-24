@@ -4,13 +4,14 @@ import base64
 from io import BytesIO
 import json
 import time
+from itertools import product
 
 from openai import APIError, OpenAI
 from pydantic import ValidationError
 
 from .colors import contrast, hex_color, parse_hex, simulated_image, simulated_rgb
 from .models import PagePlan, PageReview
-from .pdf import intersects
+from .pdf import fill_intersects
 
 PREFERRED_COLORS = ("#005A9C", "#A84400", "#6B3C91", "#303030", "#365E30", "#754B00")
 # Greedy separation on a 17-step RGB grid under the same protanopia simulator,
@@ -68,14 +69,30 @@ all paints edited together; they support recoloring only, not hatching or dashin
 Raster_palette elements identify a dominant color throughout ONE bitmap, including
 its embedded legend. Use association=image_palette, legend_ids=[], recolor actions
 with channel=fill only. The editor preserves neutral pixels and image dimensions.
-Use this ONLY for confidently identified categorical charts with a readable embedded
-legend or direct labels. Cite native text IDs if available; evidence_text_ids may be
+Use this for confidently identified categorical charts or discrete bivariate map
+classes with a readable embedded key whose axes and cells keep their positions.
+Cite native text IDs if available; evidence_text_ids may be
 empty only for an image-only figure with visually readable labels. Do not recolor
-photographs, continuous/diverging scales, wavelength/spectral color strips, stains,
+photographs, wavelength/spectral color strips, stains,
 microscopy channels, or colors that are themselves the measured subject. Those need
 a different encoding strategy. Raster hatches, labels, and dashes are unsupported.
-If a bitmap's legend is outside that bitmap, leave it unchanged unless an unchanged
-direct label inside the bitmap already identifies each affected category.
+If a categorical bitmap has an external vector or bitmap legend, use association=legend
+and include its matching legend IDs and map palette IDs in ONE group. Matching source
+colors may differ by at most 12/255 per RGB channel due to image compression. A source
+color alone is not evidence of the same category. Preserve photographs and aerial
+backgrounds: do not try to recolor a mixed photographic image as a flat map.
+
+For a numerical bitmap scale use association=image_ordered and palette_order listing
+the affected raster palette IDs in ASCENDING SOURCE VALUE order, established from its
+existing numeric key. Recolor fill actions only; all affected IDs must occur once in
+palette_order. Use pale blue for lower values and successively darker blue for higher
+values, strictly decreasing lightness also under protanopia. The editor interpolates
+between these anchors to retain continuous gradients, source labels and boundaries.
+Use only the part of an incomplete legend whose colors/order are unambiguous; do not
+invent missing endpoints or reorder arbitrary palette IDs. Explain any retained
+clipping. image palette_mode=ordered_only forbids categorical recoloring. For all
+other associations palette_order must be []. Do not force a diverging scale with a
+meaningful midpoint into a sequential scale. Retain unclear scales with a warning.
 
 Preserve text/background contrast. Avoid pale colors behind white text or dark colors
 behind black text. Hatches cannot cover any text. Prefer blue/orange/purple palettes
@@ -87,6 +104,11 @@ chart, legend, and status indicators. Do not leave confidently identified status
 boxes unchanged when their suggested colors pass validation. A shared color alone
 does not prove a semantic relationship; retain each indicator's actual source label.
 Use the suggested hatch on eligible chart and legend shapes, keeping it off text.
+Never hatch an element with hatch_size_eligible=false. If a category has tiny bars
+or legend swatches, use a consistent recolor-only encoding for that whole category;
+do not let an optional hatch invalidate an otherwise useful color change. For a
+legend group every legend symbol and corresponding chart element needs identical
+fill/stroke/style edits. Keep pie and bar groups separate when their keys differ.
 Avoid replacing the suggested palette with multiple similar blues, purples, or greens.
 Suggestions do not establish legend/category associations: uncertain mappings must
 still remain unchanged. If guidance is absent, propose colors that pass the checks.
@@ -128,34 +150,44 @@ def categorical_color_guidance(data):
             if color is not None and max(color) - min(color) > .05:
                 uses.setdefault(hex_color(color), []).append((element, channel))
     if len(uses) > len(PREFERRED_COLORS):
-        return dense_line_guidance(uses)
+        dense = dense_line_guidance(uses)
+        if dense:
+            return dense
     suggestions, available = [], list(PREFERRED_COLORS)
+    if len(uses) > len(PREFERRED_COLORS):
+        available += [hex_color(rgb) for rgb in product((.08, .28, .48, .68, .88), repeat=3)
+                      if max(rgb)-min(rgb) > .1]
+    selected = []
+    simulations = {color: simulated_rgb(parse_hex(color)) for color in available}
     for source, targets in uses.items():
-        for color in available:
+        constraints = set()
+        for element, channel in targets:
+            before = getattr(element, channel)
+            comparisons = ([((1, 1, 1), 3)] if element.kind == 'raster_palette' or channel == 'stroke' else
+                           [(text.color, 4.5) for text in data.text if text.visible and fill_intersects(element, text.bbox, .5)])
+            for foreground, ratio in comparisons:
+                for simulated, transform in ((False, lambda c: c), (True, simulated_rgb)):
+                    ink, old = transform(foreground), transform(before)
+                    constraints.add((simulated, tuple(ink), min(ratio, contrast(ink, old))))
+        candidates = sorted(available, key=lambda c: min((sum((simulations[c]-previous)**2) for previous in selected), default=0),
+                            reverse=True) if len(uses) > len(PREFERRED_COLORS) else available
+        for color in candidates:
             if color == source:
                 continue
             after = parse_hex(color)
-            checks = []
-            for element, channel in targets:
-                before = getattr(element, channel)
-                if channel == "fill":
-                    comparisons = [(text.color, 4.5) for text in data.text if text.visible and intersects(element.bbox, text.bbox)]
-                else:
-                    comparisons = [((1, 1, 1), 3)]
-                for foreground, target_ratio in comparisons:
-                    for transform in (lambda rgb: rgb, simulated_rgb):
-                        ink, old, new = map(transform, (foreground, before, after))
-                        checks.append(contrast(ink, new) + .05 >= min(target_ratio, contrast(ink, old)))
-            if not all(checks):
+            if any(contrast(ink, simulations[color] if simulated else after) + .05 < floor
+                   for simulated, ink, floor in constraints):
                 continue
             eligible = [element.id for element, channel in targets if channel == "fill" and element.kind == 'vector' and not element.members
                         and min(element.bbox[2] - element.bbox[0], element.bbox[3] - element.bbox[1]) >= 6
-                        and not any(text.visible and intersects(element.bbox, text.bbox, 1) for text in data.text)]
-            style = ("diagonal", "cross", None, None, "diagonal", "cross")[PREFERRED_COLORS.index(color)]
+                        and not any(text.visible and fill_intersects(element, text.bbox, 1) for text in data.text)]
+            style = (("diagonal", "cross", None, None, "diagonal", "cross")[PREFERRED_COLORS.index(color)]
+                     if color in PREFERRED_COLORS and len(eligible) == len(targets) else None)
             suggestions.append({"source_color": source, "suggested_color": color,
                                 "targets": [{"target_id": element.id, "channel": channel} for element, channel in targets],
                                 "suggested_hatch": style, "hatch_eligible_ids": eligible})
             available.remove(color)
+            selected.append(simulations[color])
             break
     return suggestions
 
@@ -229,8 +261,13 @@ class OpenAIReviewer:
             raise AgentError("OpenAI returned an invalid structured response.") from None
 
     def propose(self, data, original):
+        figures = []
+        for item in list(data.images.values())[:4]:
+            detail = item['image'].copy()
+            detail.thumbnail((1600, 1600))
+            figures.append((f"Original bitmap {item['id']}, detail for reading its legend", detail))
         return self._request("propose", data,
-                             [("Original page", original), ("Original under protanopia simulation", simulated_image(original))],
+                             [("Original page", original), ("Original under protanopia simulation", simulated_image(original)), *figures],
                              {}, PagePlan)
 
     def review(self, data, original, corrected, applied, rejected):

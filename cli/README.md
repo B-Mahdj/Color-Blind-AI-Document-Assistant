@@ -35,7 +35,7 @@ Each completed processing run writes:
 | --- | --- |
 | `improved.pdf` | Complete PDF, including pages retained unchanged |
 | `report.md` | English explanations of actual edits, unresolved issues, reader checklist |
-| `report.json` | Versioned machine-readable results, stable element IDs, changes, metrics, warnings, model usage, output paths |
+| `report.json` | Versioned results, accepted changes, proposal/review decisions, metrics, warnings, model usage, output paths |
 | `previews/` | Original, corrected, original-protanopia, and corrected-protanopia PNGs for every page |
 
 Preview filenames follow `page-0001.corrected.png`. Simulations are for comparison, not the exported reading version.
@@ -56,14 +56,16 @@ The input is never overwritten. Use a different output directory or `--overwrite
 ## Supported documents
 
 - One digital PDF per run, 1-50 pages and at most 50 MB.
+- A scoped six-million-token content-stream parsing budget supports dense vector maps while retaining a finite resource limit (pypdf 6.18 or later).
 - Native text and RGB, grayscale, CMYK, and supported ICC vector colors, including affine transformations, clipping, ordinary link annotations, and nested Form XObjects.
 - Opaque normal graphics states are supported. Unsupported effects protect the affected objects rather than automatically blocking the entire page.
 - Up to 1,200 editable targets and 30,000 extracted text characters after filtering invisible/neutral objects and bundling small same-color fragments. Individual source paints remain intact.
-- Flat-color RGB/grayscale bitmap figures have a separate categorical palette path. Replacements are lossless, preserve dimensions and neutral pixels, and affect only the selected image invocation, including its embedded legend. Profiled/CMYK bitmaps remain protected until a dedicated color-managed conversion is implemented.
+- Flat-color RGB, grayscale, CMYK, and supported ICC bitmap figures have a palette path. A filtered copy estimates compressed ink colors; the exported source image is not filtered. ICC conversion uses the embedded profile; replacements retain the original color space and unmatched native samples. Dimensions and neutral pixels remain unchanged. Matched external vector/bitmap legends can be edited in the same atomic group.
+- Numerical raster scales can use explicit source-color ordering and a strictly darker palette for increasing values, checked in normal and simulated views. Interpolation retains continuous colorbars. Source order must be legible; missing legend values are never invented.
 - Source text remains in its original language. CLI messages and generated explanations are English.
 - Added labels copy source words; decorative bullet prefixes are omitted. Helvetica Latin characters, including French accents, are supported. Other glyphs are rejected.
 
-Photos, gradients, continuous/diverging bitmap scales, masked images, shading, spot/pattern colors, real transparency/overprint, and text clipping remain protected. Bitmap colors that are themselves measurements (such as spectral colors or microscopy channels) must not be remapped as categories. Bitmap OCR, hatching, and line-style editing are not implemented. Rotated/cropped/offset page boxes, nonstandard user units, and non-link/custom-appearance annotations still block a page. Encrypted PDFs and interactive forms are rejected as complete inputs. Every page remains in the export; inspect the per-page coverage and warnings to distinguish editable figures from protected content.
+Photos, unclear or diverging bitmap scales, masked images, shading, spot/pattern colors, real transparency/overprint, and text clipping remain protected. Bitmap colors that are themselves measurements (such as spectral colors or microscopy channels) must not be remapped as categories. Bitmap OCR, hatching, and line-style editing are not implemented. Rotated/cropped/offset page boxes, nonstandard user units, and non-link/custom-appearance annotations still block a page. Encrypted PDFs and interactive forms are rejected as complete inputs. Every page remains in the export; inspect the per-page coverage and warnings to distinguish editable figures from protected content.
 
 Run again from the **original PDF** when changing settings. PDFs already containing assistant cues are not correction inputs for this initial version.
 
@@ -73,11 +75,11 @@ Run again from the **original PDF** when changing settings. PDFs already contain
 2. DaltonLens simulates protanopia using Viénot 1999 at severity `1.0`.
 3. OpenAI receives original page images, a simulated view, extracted text, stable element IDs, and a consistent categorical palette informed by reader feedback. Suggested colors are checked against existing text and line contrast; they do not establish category associations. Structured responses propose atomic groups of chart/legend corrections.
    For 7-32 uniquely matched solid curve/swatch pairs, separate guidance combines eight colors with solid, dashed, dotted, and dashdot styles. The palette is separated under the existing simulation and contrast checks; it is not a guarantee that all crossing curves are readable. Repeated source colors/dashes without unique legend matches remain unresolved.
-4. Local code validates IDs, colors, legend consistency, text contrast in normal and simulated views, scale ordering, and available space. Unknown or uncertain groups remain unchanged. Neutral structural graphics cannot be edited.
+4. Local code validates IDs, colors, legend consistency, text contrast in normal and simulated views, scale ordering, and available space. Filled-path overlap checks exclude empty pie-slice bounds, holes, and gaps between map fragments. Unknown or uncertain groups remain unchanged. Neutral structural graphics cannot be edited.
    Scientific captions can serve as textual legends when they explicitly name every recolored source color. Their original wording stays intact and a mapping note is mandatory; overlapping curve boxes are never used to infer which color word belongs to which curve.
 5. Color and dash changes are scoped to original paint operations. Edited Form/image invocation branches are cloned so shared copies elsewhere do not change. Clipped hatching retains drawing order. Label placement checks actual stroked paths rather than treating a curve's entire bounding rectangle as occupied. Bitmap palette masks use original pixels, preventing cascading replacements.
-6. The AI reviews the rendered candidate for correct associations and a net readability benefit. Sound partial improvements can be approved with warnings about remaining problems. It may reject or provide one replacement plan that retains sound groups. A revision is applied from the original page and marked for human review; there is no unbounded loop or second AI review of that revision.
-7. Before publication, the pipeline reopens the PDF and verifies page dimensions, nested text/geometry operations, image dimensions, annotations, and extractable text. The export retains bookmarks and internal link destinations. Reports describe accepted edits only.
+6. The AI reviews the rendered candidate for correct associations and a net readability benefit. Sound partial improvements can be approved with warnings about remaining problems. It may reject or provide one replacement plan that retains sound groups. A revision is evaluated from the original page; accepted edits are marked for human review and an empty result is reported explicitly; there is no unbounded loop or second AI review of that revision.
+7. Before publication, the pipeline reopens the PDF and verifies page dimensions, nested text/geometry operations, image dimensions, annotations, and extractable text. The export retains bookmarks and internal link destinations. Human-readable change lists describe accepted edits only; the JSON also retains proposals and reviews for diagnosis.
 
 Simulation distances are ranking heuristics. Numeric geometry checks cannot prove an AI's interpretation of a legend; real-reader review remains important.
 
@@ -85,7 +87,7 @@ Simulation distances are ranking heuristics. Numeric geometry checks cannot prov
 
 OpenAI analysis is enabled by default. Supported pages' rendered content and extracted text leave the machine. Calls use `store=False`, a 180-second request timeout for large figure inventories, and at most one SDK retry per call. Each supported page with editable targets uses one proposal call and, if a correction was proposed, one review call. Incomplete-response reasons appear in call diagnostics. No tools, code execution, or filesystem access are exposed to the model. Instructions inside a document are treated as untrusted content.
 
-Local reports contain document text, absolute file paths, and usage metadata; keep them as private as the source document. API error bodies and credentials are not copied into reports. Access to the default model must be verified with your own API account.
+Local reports contain document text, model proposals/reviews, absolute file paths, and usage metadata; keep them as private as the source document. API error bodies and credentials are not copied into reports. Access to the default model must be verified with your own API account.
 
 Git excludes `.env`, `.env.*` (except the empty `.env.example` template), logs, virtual environments, standard `output/` and `output-*/` folders, and temporary `.colorblind-*/` staging folders. Outputs written to a differently named directory need their own ignore rule before committing. The supplied five-page test fixture is deliberately versioned; generated previews and live-run reports are local only.
 
@@ -122,7 +124,7 @@ See [the skill migration plan](../skill/PROJECT_PLAN.md) for completed milestone
 
 - `colorblind_assistant/pdf.py`: inventory, rendering, preservation checks.
 - `colorblind_assistant/editor.py` and `colors.py`: bounded edits and color checks.
-- `colorblind_assistant/raster.py`: flat-color image inventory and lossless palette replacement.
+- `colorblind_assistant/raster.py`: bitmap palette inventory, native-color replacement, and ordered-scale interpolation.
 - `colorblind_assistant/agent.py` and `models.py`: OpenAI interface and structured decisions.
 - `colorblind_assistant/pipeline.py` and `cli.py`: processing, reports, publication, CLI.
 - `tests/`: fixtures and automated regression checks.
