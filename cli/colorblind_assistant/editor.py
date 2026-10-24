@@ -102,7 +102,7 @@ def _segment_crosses(box, a, b, padding):
 
 
 def _has_color_reference(data):
-    return any(re.search(r"\b(red|green|blue|orange|yellow|purple|pink|brown|cyan|magenta|black|white|gray|grey)\b", item.text, re.I) for item in data.text)
+    return any(re.search(r"\b(red|green|blue|orange|yellow|purple|pink|brown|cyan|magenta|black|white|gray|grey|rouge|vert[e]?|bleu[e]?|jaune|violet[te]*|rose|marron|noir[e]?|blanc[he]*|gris[e]?)s?\b", item.text, re.I) for item in data.text)
 
 
 def _numeric_text(element, data):
@@ -127,9 +127,13 @@ def _mapping_note(group, changes, data, elements):
         described = []
         for change in recolors:
             element = elements[change["target_id"]]
+            # A curve's bounding box can contain every other curve label. Only
+            # a filled, individually labeled region supports this association.
+            if element.fill is None or element.kind != 'vector':
+                break
             labels = [text for text in data.text if text.id in group.evidence_text_ids
                       and contains(element.bbox, text.bbox, 2) and not re.fullmatch(r"[+\-\d.% ]+", text.text)]
-            if not labels:
+            if len(labels) != 1:
                 break
             described.append(f"{labels[0].text} = {_color_name(parse_hex(change['after']))}")
         else:

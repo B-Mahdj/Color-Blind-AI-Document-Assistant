@@ -8,9 +8,9 @@ from pypdf.generic import ArrayObject, ContentStream, DictionaryObject, FloatObj
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
-from colorblind_assistant.editor import _place, _segment_crosses, apply_plan
+from colorblind_assistant.editor import _mapping_note, _place, _segment_crosses, apply_plan
 from colorblind_assistant.models import Action, CorrectionGroup, PagePlan
-from colorblind_assistant.pdf import Element, IDENTITY, PageData, assert_preserved, inspect_page, render, single_page_bytes
+from colorblind_assistant.pdf import Element, IDENTITY, PageData, TextRun, assert_preserved, inspect_page, render, single_page_bytes
 from colorblind_assistant.raster import palette, recolor_image
 
 
@@ -163,6 +163,21 @@ class ExtendedPDFTests(unittest.TestCase):
         data = PageData(1,400,400,[curve],[])
         label = _place('Drosophiles étudiées', (100,200,180,220), data, [])
         self.assertLess(label['bbox'][3], 380)
+
+    def test_overlapping_curve_boxes_do_not_claim_same_label(self):
+        curves = [Element(str(i),i,(20,20,380,380),[],None,color,1,1,IDENTITY)
+                  for i,color in enumerate(((1,0,0),(0,0,1)))]
+        texts = [TextRun('t1','bleue',(80,80,120,90),(0,0,0)), TextRun('t2','rouge',(150,80,190,90),(0,0,0))]
+        data = PageData(1,400,400,curves,texts)
+        group = CorrectionGroup(id='curves',reason='Source labels',evidence_text_ids=['t1','t2'],
+            association='direct_labels',legend_ids=[],uncertain=False,
+            actions=[Action(kind='recolor', target_ids=['0'],channel='stroke',color='#A84400')])
+        changes = [{'kind':'recolor','target_id':'0','before':'#FF0000','after':'#A84400'},
+                   {'kind':'recolor','target_id':'1','before':'#0000FF','after':'#6B3C91'}]
+        note = _mapping_note(group,changes,data,{e.id:e for e in curves})
+        self.assertIn('red -> orange',note)
+        self.assertIn('blue -> purple',note)
+        self.assertNotIn('bleue =',note)
 
     def test_nested_geometry_tampering_is_detected(self):
         out = BytesIO()
