@@ -39,6 +39,12 @@ same changes as its corresponding chart shapes with the same original color.
 If the legend consists of colored TEXT, use direct_labels and add its exact source
 text as a direct label beside a representative chart element. For direct_labels,
 each target must already contain a source label, or the group must add a source label.
+If a caption explicitly names the source colors (for example 'red = anterior,
+purple = posterior'), a legend association may instead list its TEXT IDs in
+legend_ids and evidence_text_ids. Every recolored source color must be named in
+those text runs. The editor adds a mandatory old-to-new color/style key and keeps
+the original caption. Do not mix text and vector IDs in legend_ids. This supports
+scientific caption legends without duplicating entire paragraphs beside curves.
 For ordered_scale, include all cells, recolor fills only, and preserve a strictly
 monotonic lightness order using numeric values already printed inside the cells.
 

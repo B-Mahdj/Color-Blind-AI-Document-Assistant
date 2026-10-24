@@ -44,6 +44,12 @@ def palette(image):
 
 def inspect_image(page, obj, names, stream_path, index, matrix, bbox, data):
     from .pdf import Element
+    space = obj.get('/ColorSpace')
+    space = space.get_object() if hasattr(space, 'get_object') else space
+    if isinstance(space, (list, tuple)) and str(space[0]) == '/Indexed':
+        space = space[1]
+    if str(space) not in {'/DeviceRGB', '/DeviceGray'}:
+        return 'Bitmap color profile requires a dedicated color-managed conversion.'
     if obj.get('/ImageMask') or obj.get('/SMask') or obj.get('/Mask'):
         return 'Masked or transparent bitmap.'
     if int(obj['/Width']) * int(obj['/Height']) > 16_000_000:

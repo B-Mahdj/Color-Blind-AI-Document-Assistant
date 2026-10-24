@@ -59,7 +59,7 @@ The input is never overwritten. Use a different output directory or `--overwrite
 - Native text and RGB, grayscale, CMYK, and supported ICC vector colors, including affine transformations, clipping, ordinary link annotations, and nested Form XObjects.
 - Opaque normal graphics states are supported. Unsupported effects protect the affected objects rather than automatically blocking the entire page.
 - Up to 1,200 editable targets and 30,000 extracted text characters after filtering invisible/neutral objects and bundling small same-color fragments. Individual source paints remain intact.
-- Flat-color bitmap figures have a separate categorical palette path. Replacements are lossless, preserve dimensions and neutral pixels, and affect only the selected image invocation, including its embedded legend.
+- Flat-color RGB/grayscale bitmap figures have a separate categorical palette path. Replacements are lossless, preserve dimensions and neutral pixels, and affect only the selected image invocation, including its embedded legend. Profiled/CMYK bitmaps remain protected until a dedicated color-managed conversion is implemented.
 - Source text remains in its original language. CLI messages and generated explanations are English.
 - Added labels copy source words; decorative bullet prefixes are omitted. Helvetica Latin characters, including French accents, are supported. Other glyphs are rejected.
 
@@ -73,6 +73,7 @@ Run again from the **original PDF** when changing settings. PDFs already contain
 2. DaltonLens simulates protanopia using Viénot 1999 at severity `1.0`.
 3. OpenAI receives original page images, a simulated view, extracted text, stable element IDs, and a consistent categorical palette informed by reader feedback. Suggested colors are checked against existing text and line contrast; they do not establish category associations. Structured responses propose atomic groups of chart/legend corrections.
 4. Local code validates IDs, colors, legend consistency, text contrast in normal and simulated views, scale ordering, and available space. Unknown or uncertain groups remain unchanged. Neutral structural graphics cannot be edited.
+   Scientific captions can serve as textual legends when they explicitly name every recolored source color. Their original wording stays intact and a mapping note is mandatory; overlapping curve boxes are never used to infer which color word belongs to which curve.
 5. Color and dash changes are scoped to original paint operations. Edited Form/image invocation branches are cloned so shared copies elsewhere do not change. Clipped hatching retains drawing order. Label placement checks actual stroked paths rather than treating a curve's entire bounding rectangle as occupied. Bitmap palette masks use original pixels, preventing cascading replacements.
 6. The AI reviews the rendered candidate. It may approve, reject, or provide one replacement plan. A revision is applied from the original page and marked for human review; there is no unbounded loop or second AI review of that revision.
 7. Before publication, the pipeline reopens the PDF and verifies page dimensions, nested text/geometry operations, image dimensions, annotations, and extractable text. The export retains bookmarks and internal link destinations. Reports describe accepted edits only.

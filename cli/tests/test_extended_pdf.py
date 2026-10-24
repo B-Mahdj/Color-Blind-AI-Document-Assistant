@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 from PIL import Image, ImageDraw
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import ArrayObject, ContentStream, DictionaryObject, FloatObject, NameObject, NumberObject
+from pypdf.generic import ArrayObject, ContentStream, DecodedStreamObject, DictionaryObject, FloatObject, NameObject, NumberObject
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
@@ -154,6 +154,52 @@ class ExtendedPDFTests(unittest.TestCase):
         x = np.arange(256, dtype=np.uint8)
         gradient = np.stack(np.broadcast_arrays(x, 255-x, np.zeros((100, 256), dtype=np.uint8)), axis=-1)
         self.assertEqual(palette(Image.fromarray(gradient)), [])
+
+    def test_caption_color_legend_gets_a_mandatory_mapping_note(self):
+        out = BytesIO()
+        pdf = canvas.Canvas(out, pagesize=(400,400))
+        pdf.drawString(20,360,'Red: anterior. Blue: posterior.')
+        pdf.setStrokeColorRGB(.8,.1,.1)
+        pdf.line(50,100,300,200)
+        pdf.setStrokeColorRGB(.1,.1,.8)
+        pdf.line(50,200,300,100)
+        pdf.save()
+        page = PdfReader(BytesIO(out.getvalue())).pages[0]
+        data = inspect_page(page,1)
+        actions = [Action(kind='recolor',target_ids=[data.targets[0].id],channel='stroke',color='#005A9C'),
+                   Action(kind='recolor',target_ids=[data.targets[1].id],channel='stroke',color='#A84400'),
+                   Action(kind='dash',target_ids=[data.targets[1].id],style='dashed')]
+        group = CorrectionGroup(id='caption',reason='Caption explicitly names both categories',
+            evidence_text_ids=[data.text[0].id],association='legend',legend_ids=[data.text[0].id],
+            uncertain=False,actions=actions)
+        result = apply_plan(page,data,PagePlan(groups=[group],warnings=[]))
+        self.assertTrue(result.groups,result.warnings)
+        notes = [c['text'] for c in result.groups[0]['changes'] if c['kind']=='mapping_note']
+        self.assertEqual(len(notes),1)
+        self.assertIn('red -> blue',notes[0])
+        self.assertIn('blue -> orange (dashed line)',notes[0])
+        assert_preserved(page,PdfReader(BytesIO(result.pdf)).pages[0])
+        data.text[0].text = 'Red: anterior. Other: posterior.'
+        rejected = apply_plan(page,data,PagePlan(groups=[group],warnings=[]))
+        self.assertFalse(rejected.groups)
+        self.assertIn('explicitly name',rejected.warnings[0])
+
+    def test_profiled_bitmaps_are_protected_until_color_managed(self):
+        from PIL import ImageCms
+        out = BytesIO()
+        pdf = canvas.Canvas(out,pagesize=(400,400))
+        pdf.drawImage(ImageReader(Image.new('RGB',(100,100),(200,20,20))),50,50,200,200)
+        pdf.save()
+        writer = PdfWriter()
+        page = writer.add_page(PdfReader(BytesIO(out.getvalue())).pages[0])
+        profile = DecodedStreamObject()
+        profile.set_data(ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes())
+        profile[NameObject('/N')] = NumberObject(3)
+        obj = next(iter(page['/Resources']['/XObject'].values())).get_object()
+        obj[NameObject('/ColorSpace')] = ArrayObject([NameObject('/ICCBased'),writer._add_object(profile)])
+        data = inspect_page(page,1)
+        self.assertFalse(data.images)
+        self.assertIn('color-managed',data.warnings[0])
 
     def test_placement_uses_curve_paths_and_accepts_french_labels(self):
         self.assertFalse(_segment_crosses((20, 70, 40, 90), (0,0), (100,100), 2))

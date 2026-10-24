@@ -183,8 +183,24 @@ def _validate_group(group, data, edits, used, occupied):
         raise ValueError('Bitmap targets require the categorical image_palette association.')
     if targets & used:
         raise ValueError("Another accepted group already edits this element.")
+    text_legend = bool(group.legend_ids) and set(group.legend_ids) <= texts.keys()
     if group.association == "legend":
-        if not group.legend_ids or not set(group.legend_ids) < targets:
+        if text_legend:
+            if not set(group.legend_ids) <= set(group.evidence_text_ids):
+                raise ValueError('A textual legend must be included in the source evidence.')
+            # Captions that explicitly name source colors can retain their words
+            # while a mandatory old-to-new key explains the changed encoding.
+            legend_text = ' '.join(texts[t].text for t in group.legend_ids).lower()
+            aliases = {'red': ('red','rouge'), 'green': ('green','vert','verte'), 'blue': ('blue','bleu','bleue'),
+                       'purple': ('purple','violet','violette','magenta'), 'pink': ('pink','rose','magenta'),
+                       'orange': ('orange',), 'yellow': ('yellow','jaune'), 'brown': ('brown','marron'),
+                       'cyan': ('cyan','turquoise'), 'black': ('black','noir','noire'), 'gray': ('gray','grey','gris','grise')}
+            source_colors = [getattr(elements[item], action.channel) for action in group.actions if action.kind == 'recolor'
+                             and action.channel in {'fill','stroke'} for item in action.target_ids]
+            if not source_colors or any(c is None or not any(re.search(r'\b'+word+r's?\b',legend_text)
+                       for word in aliases.get(_color_name(c), ())) for c in source_colors):
+                raise ValueError('A textual legend must explicitly name every recolored source color.')
+        elif not group.legend_ids or not set(group.legend_ids) < targets:
             raise ValueError("Legend groups must include their legend symbols and chart elements together.")
     elif group.legend_ids:
         raise ValueError("Legend IDs require a legend association.")
@@ -263,7 +279,7 @@ def _validate_group(group, data, edits, used, occupied):
                 additions.append(label)
                 record.update(text=label["text"], bbox=label["bbox"], source_text_id=action.source_text_id)
             changes.append(record)
-    if group.association == "legend":
+    if group.association == "legend" and not text_legend:
         # Match each legend's applied encoding to a chart element of the same original color.
         for legend_id in group.legend_ids:
             legend = elements[legend_id]
@@ -300,6 +316,8 @@ def _validate_group(group, data, edits, used, occupied):
             and not any(change["kind"] in {"label", "hatch", "dash"} for change in changes)):
         raise ValueError("The palette reduces simulated separation without an additional cue.")
     note = _mapping_note(group, changes, data, elements)
+    if text_legend and not note:
+        raise ValueError('A textual color legend requires an explicit mapping note.')
     if note:
         anchor = union([elements[item].bbox for item in targets])
         placed = _place(note, anchor, data, occupied + [item["bbox"] for item in additions], note=True)
