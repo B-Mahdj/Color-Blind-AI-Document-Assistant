@@ -218,14 +218,23 @@ class ExtendedPDFTests(unittest.TestCase):
         group = CorrectionGroup(id='curves',reason='Source labels',evidence_text_ids=['t1','t2'],
             association='direct_labels',legend_ids=[],uncertain=False,
             actions=[Action(kind='recolor', target_ids=['0'],channel='stroke',color='#A84400')])
-        changes = [{'kind':'recolor','target_id':'0','before':'#FF0000','after':'#A84400'},
-                   {'kind':'recolor','target_id':'1','before':'#0000FF','after':'#6B3C91'}]
+        changes = [{'kind':'recolor','target_id':'0','channel':'stroke','before':'#FF0000','after':'#A84400'},
+                   {'kind':'recolor','target_id':'1','channel':'stroke','before':'#0000FF','after':'#6B3C91'}]
         note = _mapping_note(group,changes,data,{e.id:e for e in curves})
         self.assertIn('red -> orange',note)
         self.assertIn('blue -> purple',note)
         self.assertNotIn('bleue =',note)
         self.assertEqual(_color_name((.91,.96,1.)), 'pale blue')
         self.assertEqual(_color_name((0,127/255,134/255)), 'teal')
+
+    def test_mapping_note_does_not_claim_all_lines_have_a_partial_cue(self):
+        data = PageData(1,400,400,[],[TextRun('t','Green: model',(20,350,100,365),(0,0,0))])
+        group = CorrectionGroup(id='model',reason='Caption key',evidence_text_ids=['t'],association='legend',
+            legend_ids=['t'],uncertain=False,actions=[Action(kind='recolor',target_ids=['a','b'],channel='stroke',color='#005A9C')])
+        changes = [{'kind':'recolor','target_id':i,'channel':'stroke','before':'#008000','after':'#005A9C'} for i in ['a','b']]
+        changes.append({'kind':'dash','target_id':'a','style':'dashdot'})
+        note = _mapping_note(group,changes,data,{})
+        self.assertIn('dashdot on selected lines',note)
 
     def test_hidden_text_is_not_a_placement_obstacle_in_transformed_forms(self):
         out = BytesIO()

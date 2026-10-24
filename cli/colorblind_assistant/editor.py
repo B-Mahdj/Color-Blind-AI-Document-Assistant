@@ -160,8 +160,16 @@ def _mapping_note(group, changes, data, elements):
     descriptions = []
     for old, new in mapping:
         ids = {change["target_id"] for change in recolors if change["before"] == old and change["after"] == new}
-        cues = sorted({f"{change['style']} {'hatch' if change['kind'] == 'hatch' else 'line'}"
-                       for change in changes if change["kind"] in {"hatch", "dash"} and change["target_id"] in ids})
+        cues = []
+        for kind, style in sorted({(c['kind'],c['style']) for c in changes
+                                  if c['kind'] in {'hatch','dash'} and c['target_id'] in ids}):
+            styled = {c['target_id'] for c in changes if c['kind']==kind and c.get('style')==style and c['target_id'] in ids}
+            channel = 'stroke' if kind == 'dash' else 'fill'
+            relevant = {c['target_id'] for c in recolors if c['target_id'] in ids and c['channel']==channel}
+            if styled >= relevant:
+                cues.append(f"{style} {'line' if kind == 'dash' else 'hatch'}")
+            else:
+                cues.append(f'{style} on selected lines' if kind == 'dash' else f'{style} hatch on selected shapes')
         old_name = _color_name(parse_hex(old))
         if len({a for a,_ in mapping if _color_name(parse_hex(a)) == old_name}) > 1:
             old_name += f' ({old})'
