@@ -62,3 +62,13 @@ The reader with protanopia reviewed this revised live output and described it as
 - Resolve or explicitly retain the East and West bar associations before presenting a fully corrected demo.
 - Measure identification accuracy and reading time in a structured comparison if broader usability claims are needed.
 - Gather task-based feedback on additional documents when expanding support.
+
+## Repository publication review
+
+On 24 October 2026, the automated suite was rerun: all 30 tests passed and `python -m pip check` found no broken requirements. No new live API call was needed for this documentation and publication change.
+
+The review checked the tracked working files and all reachable Git history, including commit messages, for the configured local OpenAI key (without printing it), its base64 representation, common provider-token formats, private keys, credential-bearing URLs, and suspicious credential assignments. At the starting commit `7c4a946`, this covered 13 commits and 52 distinct file blobs. No secret matches or historical private environment files were found. The final documentation and ignore changes were scanned again before publication.
+
+The sole tracked PDF is the supplied test fixture. Its extracted text and decoded page streams were checked; its metadata is generic, and it contains no attachments or document-level automatic action. The Git remote contains no embedded credentials. `.env`, generated outputs, environments, logs, and temporary processing folders are excluded from the intended publication; `.env.example` contains an empty key field.
+
+These are scoped publication checks, not a penetration test or a dependency-vulnerability audit. Pattern matching cannot prove that every possible secret format is absent. The documented unsupported PDF types and unresolved reader-validation issues remain unchanged.

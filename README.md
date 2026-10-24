@@ -20,7 +20,7 @@ notepad .env
 $LASTEXITCODE
 ```
 
-The environment in this checkout is already installed. Open `.env`, paste your key after `OPENAI_API_KEY=`, and save it before running the CLI. Virtual environments are machine-specific and are not committed.
+After installing the dependencies, open `.env`, paste your key after `OPENAI_API_KEY=`, and save it before running the CLI. Virtual environments are machine-specific and are not committed.
 
 The default model is `gpt-6.1-sol`. Change `OPENAI_MODEL` in `.env` to use another compatible model available to your account. The CLI automatically reads `.env` from the **current working directory**, so run it from the project directory. Existing environment variables take precedence over `.env`. Only `OPENAI_API_KEY` and `OPENAI_MODEL` are used from the file; variable expansion is disabled. [.env.example](.env.example) documents the settings. The private `.env` file and generated outputs are ignored by Git.
 
@@ -80,7 +80,9 @@ Simulation distances are ranking heuristics. Numeric geometry checks cannot prov
 
 OpenAI analysis is enabled by default. Supported pages' rendered content and extracted text leave the machine. Calls use `store=False`, a 60-second request timeout, and at most one SDK retry per call. Each supported page uses one proposal call and, if a correction was proposed, one review call. No tools, code execution, or filesystem access are exposed to the model. Instructions inside a document are treated as untrusted content.
 
-Local reports contain document text and usage metadata; keep them as private as the source document. API error bodies and credentials are not copied into reports. Access to the default model must be verified with your own API account.
+Local reports contain document text, absolute file paths, and usage metadata; keep them as private as the source document. API error bodies and credentials are not copied into reports. Access to the default model must be verified with your own API account.
+
+Git excludes `.env`, `.env.*` (except the empty `.env.example` template), logs, virtual environments, standard `output/` and `output-*/` folders, and temporary `.colorblind-*/` staging folders. Outputs written to a differently named directory need their own ignore rule before committing. The supplied five-page test fixture is deliberately versioned; generated previews and live-run reports are local only.
 
 ## Tests and demo evidence
 
@@ -99,6 +101,8 @@ The revised live result in `output-live-qa-v2/` restores the preferred status co
 ## Project layout
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the Mermaid workflow and the files/functions responsible for each step.
+
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for completed milestones, the overall architecture, and the proposed migration to an installable skill containing instructions and references. The migration is a plan; no skill package has been implemented yet.
 
 - `colorblind_assistant/pdf.py`: inventory, rendering, preservation checks.
 - `colorblind_assistant/editor.py` and `colors.py`: bounded edits and color checks.
