@@ -35,6 +35,24 @@ The paired example in `../assets/examples/` shows the original chart and a suppo
 | --- | --- |
 | ![Original bar chart with red, green, and orange category fills](../assets/examples/bar-chart-before.png) | ![Corrected bar chart with consistent blue, orange, and purple fills, with hatching on two categories](../assets/examples/bar-chart-after.png) |
 
+## Worked examples: sequential map scales
+
+These map pairs show validated recoloring of complete numeric keys. The map values and key labels stay the same; the sequential scale changes to blue, with darker blue representing higher values.
+
+### Map 3: Eurostat income by NUTS 2 regions
+
+| Original | Recolored scale |
+| --- | --- |
+| ![Original European income map with a green-yellow-purple scale and numeric key](../assets/examples/maps/map-3-before.png) | ![Corrected European income map with a blue scale, the numeric key retained, and a note that darker blue means higher values](../assets/examples/maps/map-3-after.png) |
+
+### Map 4: World prosperity
+
+This is a binned sequential choropleth. Preserve the numeric class order and the neutral no-data category when recoloring it.
+
+| Original | Recolored scale |
+| --- | --- |
+| ![Original world prosperity map with a green-yellow-orange-red scale and score-rank key](../assets/examples/maps/map-4-before.png) | ![Corrected world prosperity map with an ordered blue scale, the score-rank key retained, and a note that darker blue means higher values](../assets/examples/maps/map-4-after.png) |
+
 ## For timeseries charts (line, etc.)
 
 - Use more lines related changes : making the lines dashed, dotted, and dash-dot. 
