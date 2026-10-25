@@ -1,14 +1,7 @@
-# Color-Blind Document Assistant
+# Colorblind PDF Fixer
 
-A document assistant for readers with **protanopia**, built for the OpenAI DevDay Community Hackathon in Paris.
+A Codex skill for making PDF figures more readable for readers with **protanopia** while preserving document content and layout.
 
-The repository has two areas:
+The self-contained [skill definition](SKILL.md) includes the workflow, correction rules, verification requirements, and dependencies. This repository contains instructions only, with no CLI, bundled scripts, or example assets.
 
-| Folder | Contents | Status |
-| --- | --- | --- |
-| [cli/](cli/README.md) | Python application, tests, fixtures, stress-document generator, configuration template, architecture and QA records. | Implemented and tested. |
-| [skill/](skill/README.md) | Migration plan and workspace for the upcoming instructions-and-references skill. | Planned; no runnable skill yet. |
-
-See [CLI setup and usage](cli/README.md), the [architecture](cli/ARCHITECTURE.md), or the [skill migration plan](skill/PROJECT_PLAN.md).
-
-The local `.env` and generated outputs now live under `cli/` and remain ignored by Git. The development virtual environment stays in the repository's `.venv/` directory. The shared Git settings and MIT [license](LICENSE) remain at the root.
+Licensed under the MIT [license](LICENSE).
