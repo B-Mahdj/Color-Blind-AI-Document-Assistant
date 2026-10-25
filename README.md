@@ -2,7 +2,7 @@
 
 A Codex skill for making PDF figures more readable for readers with **protanopia** while preserving document content and layout.
 
-<!-- Add the product walkthrough video here when available. -->
+[Watch the product walkthrough (MP4)](docs/colorblind-pdf-fixer-demo.mp4)
 
 ## Before & after
 
