@@ -39,3 +39,10 @@ If installation isn't possible in this environment, tell the user which dependen
 
 ## Environment
 No required environment variables.
+## Worked example: categorical bar chart
+
+The paired example in `assets/examples/` shows one source chart and a supported correction. Categories are established by the legend; the correction applies each color consistently to its bars and legend swatch, then adds hatching as a non-color cue. Keep the values and category meanings unchanged. Treat this as an example, not a fixed palette for other charts.
+
+| Original | Corrected example |
+| --- | --- |
+| ![Original bar chart with red, green, and orange category fills](assets/examples/bar-chart-before.png) | ![Corrected bar chart with consistent blue, orange, and purple fills, with hatching on two categories](assets/examples/bar-chart-after.png) |
