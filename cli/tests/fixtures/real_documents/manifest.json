@@ -1,9 +1,9 @@
 {
-  "title": "Real education and everyday document test candidates",
+  "title": "Real education, data visualisation and finance test candidates",
   "collected_on": "2026-10-25",
   "page_numbering": "1-based PDF pages",
   "path_base": "repository root",
-  "scope": "Manual test catalogue; 6 education documents and 1 transport document",
+  "scope": "Manual test catalogue; 10 education documents and 1 transport document, including 2 data visualisation courses and 2 finance learning resources",
   "simulation": {
     "helper": "colorblind_assistant.colors.simulated_image",
     "model": "DaltonLens Simulator_Vienot1999",
@@ -188,6 +188,114 @@
       "pdf_page_count": 1,
       "original_preview": "output/pdf/everyday-learning/previews/L07-original.png",
       "protanopia_preview": "output/pdf/everyday-learning/previews/L07-protanopia.png",
+      "inspection_status": "primary original and protanopia preview visually reviewed"
+    },
+    {
+      "id": "L08",
+      "source_title": "CSE512 - Visual Encoding",
+      "publisher": "Jeffrey Heer, University of Washington",
+      "language": "en",
+      "audience": "Data visualisation students",
+      "primary_pdf_page": 57,
+      "context_pdf_pages": [
+        30,
+        58
+      ],
+      "control_pdf_pages": [],
+      "reader_task": "Use the Product Type legend to identify the points below -$500 profit and the category of the highest-profit point.",
+      "reference_answer": "Tea has the cluster below -$500; Coffee has the highest-profit point in this screenshot.",
+      "colour_risk": "Small overlapping green and orange category marks converge in the protanopia preview.",
+      "preservation_requirement": "Keep the four product categories, point positions and legend consistent. Page 58 shapes encode Market, not Product Type; page 30 is an intentional heatmap-versus-position comparison.",
+      "test_role": "learner chart reading: categorical scatterplot legend",
+      "source_url": "https://courses.cs.washington.edu/courses/cse512/25sp/lectures/CSE512-VisualEncoding.pdf",
+      "local_path": "output/pdf/everyday-learning/uw-visual-encoding.pdf",
+      "sha256": "ce4bb06ff11132de27c30f1df31cb890cebca443b97d01f62a612d80863c945b",
+      "bytes": 8881864,
+      "pdf_page_count": 88,
+      "original_preview": "output/pdf/everyday-learning/previews/L08-original.png",
+      "protanopia_preview": "output/pdf/everyday-learning/previews/L08-protanopia.png",
+      "inspection_status": "primary original and protanopia preview visually reviewed",
+      "source_notes": "pypdf reports recoverable cross-reference warnings; selected pages render successfully. The source PDF has not been repaired or rewritten."
+    },
+    {
+      "id": "L09",
+      "source_title": "CSE512 - Color",
+      "publisher": "Jeffrey Heer, University of Washington",
+      "language": "en",
+      "audience": "Data visualisation students learning quantitative scales",
+      "primary_pdf_page": 49,
+      "context_pdf_pages": [
+        44,
+        50
+      ],
+      "control_pdf_pages": [],
+      "reader_task": "Locate the 1:1 reference on the heatmap legend and distinguish visible cells encoded on opposite sides of that reference.",
+      "reference_answer": "The printed legend has a 1:1 ratio reference, with green and red on opposite sides. Preserve its two directions and fold-change labels; it is not labelled as a signed scale with a zero midpoint.",
+      "colour_risk": "Opposing red and green heatmap hues become similar. The diverging ratio scale must retain its 1:1 reference and both directions.",
+      "preservation_requirement": "Keep visible cell positions, row and column order, dendrogram, labels, scale endpoints and 1:1 ratio reference consistent. Do not invent negative values or a zero midpoint. The source figure is clipped at the bottom: do not reconstruct hidden rows. Review deliberate palette demonstrations separately.",
+      "test_role": "learner chart reading: diverging heatmap with a 1:1 ratio reference",
+      "source_url": "https://courses.cs.washington.edu/courses/cse512/25sp/lectures/CSE512-Color.pdf",
+      "local_path": "output/pdf/everyday-learning/uw-colour-lecture.pdf",
+      "sha256": "8bbf08d8a6df02b04d2bfee4464d22447909b6a496b353f49f3bffd40741b9a8",
+      "bytes": 5302449,
+      "pdf_page_count": 52,
+      "original_preview": "output/pdf/everyday-learning/previews/L09-original.png",
+      "protanopia_preview": "output/pdf/everyday-learning/previews/L09-protanopia.png",
+      "inspection_status": "primary original and protanopia preview visually reviewed",
+      "source_notes": "pypdf reports recoverable cross-reference warnings; selected pages render successfully. The source PDF has not been repaired or rewritten."
+    },
+    {
+      "id": "L10",
+      "source_title": "15.401 Recitation 6 - Portfolio Choice",
+      "publisher": "MIT OpenCourseWare, Yichuan Liu",
+      "language": "en",
+      "audience": "Finance students learning portfolio risk and return",
+      "primary_pdf_page": 15,
+      "context_pdf_pages": [
+        16,
+        18
+      ],
+      "control_pdf_pages": [],
+      "reader_task": "Follow the four correlation-labelled curves and identify which offers the lowest standard deviation near 10% expected return.",
+      "reference_answer": "The rho = -1 case reaches the lowest risk near that expected return in the supplied diagram.",
+      "colour_risk": "Thin green and orange curves become similarly yellow in the protanopia preview; existing labels and dash patterns remain useful.",
+      "preservation_requirement": "Preserve correlation labels, dash patterns, endpoints, axes, percentage units and all curve geometry; retain the adjacent explanations.",
+      "test_role": "finance learning: expected-return and risk curves",
+      "source_url": "https://ocw.mit.edu/courses/15-401-finance-theory-i-fall-2008/afd942e9eab1c6e9e2da35d37a978523_MIT15_401F08_rec06.pdf",
+      "local_path": "output/pdf/everyday-learning/mit-portfolio-choice.pdf",
+      "sha256": "d2b6874af24dc5c63bb6e9ea61daf92155601cfbe9a6012aa0b4fd172d7c4574",
+      "bytes": 2146485,
+      "pdf_page_count": 33,
+      "original_preview": "output/pdf/everyday-learning/previews/L10-original.png",
+      "protanopia_preview": "output/pdf/everyday-learning/previews/L10-protanopia.png",
+      "inspection_status": "primary original and protanopia preview visually reviewed"
+    },
+    {
+      "id": "L11",
+      "source_title": "Varsity Module 2 - Technical Analysis",
+      "publisher": "Zerodha Varsity",
+      "language": "en",
+      "audience": "Learners reading financial charts and indicator panels",
+      "primary_pdf_page": 163,
+      "context_pdf_pages": [
+        14,
+        162
+      ],
+      "control_pdf_pages": [
+        15
+      ],
+      "reader_task": "Distinguish rising and falling candles, then use the component legend on PDF page 162 to match the three lower indicator lines to their right-edge badges on page 163.",
+      "reference_answer": "The setup identifies +DI as green, ADX as black and -DI as red. At the right edge of the displayed panel, +DI is highest, ADX is in the middle and -DI is lowest. Candle anatomy can be checked with the labelled numerical examples on page 15.",
+      "colour_risk": "Red/green candles and indicator lines lose hue separation in the protanopia preview. This book uses different candle palettes in different chapters.",
+      "preservation_requirement": "Keep open/high/low/close semantics, candle bodies and wicks, time and price axes, indicator names and displayed values intact. Any remapping must agree with the page-specific component legend and surrounding colour words. PDF page 163 is printed page 162.",
+      "test_role": "finance learning: candle direction and indicator identity",
+      "source_url": "https://zerodha-common.s3.ap-south-1.amazonaws.com/Varsity/Modules/Module%202_Technical%20Analysis.pdf",
+      "local_path": "output/pdf/everyday-learning/zerodha-technical-analysis.pdf",
+      "sha256": "06a821f717f7dfcfbb626e21f3ca3c8b6893b4eb77e3313a92e6aedba47c729d",
+      "bytes": 4642912,
+      "pdf_page_count": 177,
+      "original_preview": "output/pdf/everyday-learning/previews/L11-original.png",
+      "protanopia_preview": "output/pdf/everyday-learning/previews/L11-protanopia.png",
       "inspection_status": "primary original and protanopia preview visually reviewed"
     }
   ]

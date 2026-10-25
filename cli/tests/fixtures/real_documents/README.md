@@ -1,6 +1,6 @@
 # Real documents for reader-task testing
 
-Collected and inspected on 25 October 2026. This set adds **six education PDFs and one everyday transport PDF** to the existing research and geography samples. Selection is based on tasks a reader needs to complete, rather than the number of colours on a page.
+Collected and inspected on 25 October 2026. This set contains **ten education PDFs and one everyday transport PDF**, including two data-visualisation courses and two finance learning resources. Selection is based on tasks a reader needs to complete, rather than the number of colours on a page.
 
 The [manifest](manifest.json) records publisher URLs, original-file SHA-256 hashes, page counts, selected pages, reader tasks and preservation requirements. Paths in the manifest are relative to the repository root. Downloaded originals and previews are under the Git-ignored [`output/pdf/everyday-learning/`](../../../../output/pdf/everyday-learning/) directory. They remain separate, unmodified PDFs; third-party material is not included in this commit or covered by this repository's MIT licence.
 
@@ -18,12 +18,27 @@ All page references below are **1-based PDF pages**. Open the original PDFs at a
 | L06 | [Éduscol, Quelle solution choisir pour détartrer?](https://eduscol.education.fr/document/22993/download) ([local PDF](../../../../output/pdf/everyday-learning/eduscol-household-ph.pdf)) | **8** | Find the BBT transition interval and its named colours, then locate the numerical measurement alternative. The labelled table is an accessible-support control beside a small photograph of pH paper. Preserve the table and measurement photograph; colour changes to decorative headers are not a useful success metric. |
 | L07 | [RATP, Paris Métro map](https://www.ratp.fr/informer/picts/plans/pdf/reseaux/metro.pdf) ([local PDF](../../../../output/pdf/everyday-learning/paris-metro-map.pdf)) | **1** | Follow RER A and D between Châtelet-Les Halles and Gare de Lyon using the letter badges and connections. Thin coloured routes and crossings test continuity. Preserve official route identities, station names and interchange topology. The downloaded map is marked 01.2026; this is a test snapshot. |
 
+## Data visualisation and finance learners
+
+The [additional comparison overview](../../../../output/pdf/everyday-learning/dataviz-finance-original-vs-protanopia.png) shows the four new primary pages. Start with L08 for category identification and L11 for financial chart reading.
+
+| Case | Document and local original | Pages | Reader task and useful test boundary |
+| --- | --- | --- | --- |
+| L08 | [University of Washington CSE512, Visual Encoding](https://courses.cs.washington.edu/courses/cse512/25sp/lectures/CSE512-VisualEncoding.pdf) ([local PDF](../../../../output/pdf/everyday-learning/uw-visual-encoding.pdf)) | **57**; context 30, 58 | Use the scatterplot legend to identify the product category below -$500 profit and the category with the highest-profit point. Small coloured circles overlap; green and orange categories lose separation. Page 58 adds shapes for **market**, not product type: do not mistake this for redundant product-category encoding. Page 30 separately compares a red/green heatmap with positional encoding. |
+| L09 | [University of Washington CSE512, Color](https://courses.cs.washington.edu/courses/cse512/25sp/lectures/CSE512-Color.pdf) ([local PDF](../../../../output/pdf/everyday-learning/uw-colour-lecture.pdf)) | **49**; context 44, 50 | Locate the **1:1** reference on the red/green heatmap scale, then distinguish cells on opposite sides of that reference. The simulation collapses opposing hues. Preserve the ratio reference, direction, cell locations, dendrogram and legend together; do not invent negative values or a zero midpoint. The source figure is already clipped at the bottom: test visible cells only. Palette-design demonstrations on other pages need separate review. |
+| L10 | [MIT OpenCourseWare, Portfolio Choice recitation](https://ocw.mit.edu/courses/15-401-finance-theory-i-fall-2008/resources/portfolio-theory/index.html) ([local PDF](../../../../output/pdf/everyday-learning/mit-portfolio-choice.pdf)) | **15**; context 16, 18 | Follow the four labelled correlation curves on the expected-return/risk diagram and identify which reaches the lowest risk near 10% expected return. Thin green/orange curves become similar in simulation. Keep correlation labels, dash patterns, endpoints, axis units and curve geometry intact. |
+| L11 | [Zerodha Varsity, Technical Analysis](https://zerodha.com/varsity/module/technical-analysis/) ([local PDF](../../../../output/pdf/everyday-learning/zerodha-technical-analysis.pdf)) | **163**; context 14, 162; control 15 | Distinguish red/green candles and match the three lower indicator lines to their right-edge numeric badges. The candle and indicator hues converge in simulation. Page 15 gives labelled candle anatomy and numerical examples as a control. This book changes candle palettes between chapters; apply page-specific meaning, and keep any changed chart colours consistent with surrounding explanations. |
+
+Financial examples are historical teaching snapshots. The task is to read the supplied chart accurately; it does not require judging a trading strategy or choosing an investment. PDF page numbers differ from printed page numbers in the Varsity book: PDF page 163 is printed page 162.
+
 ## What was verified
 
-- All seven downloads have a PDF header, parse successfully, are unencrypted and have recorded page counts and SHA-256 hashes.
+- All eleven downloads have a PDF header, parse successfully, are unencrypted and have recorded page counts and SHA-256 hashes.
 - The primary page for each case was rendered and visually inspected alongside a simulation from the existing `colorblind_assistant.colors.simulated_image` helper: DaltonLens Vienot 1999, protanopia, severity 1.0.
 - Original and simulated PNG dimensions match. The NASA preview is rotated for reading; its source PDF is unchanged.
 - Additional original pages inspected: L03 pages 24, 27 and 28; L04 pages 2 and 3; L05 page 5. These provide context and unchanged controls, not additional simulated cases.
+- Additional original pages inspected for the extension: L08 pages 30 and 58; L09 pages 44 and 50; L10 pages 16 and 18; L11 pages 14, 15 and 162. Four new primary pages have full-size original/protanopia pairs; originals remain unchanged.
+- `pypdf` reports recoverable cross-reference warnings for L08 and L09, and a cache warning for the earlier L05. The selected pages render successfully. Retain the source bytes and distinguish any future parsing problem from a colour-accessibility result.
 
 These are **candidate accessibility problems inferred from source inspection and simulation**, not results from colour-blind participants. Protanopia simulation is not daltonization, a corrected output, or evidence about every type of colour-vision deficiency.
 
@@ -34,5 +49,6 @@ These are **candidate accessibility problems inferred from source inspection and
 3. Use L03 page 27 and L06's labelled table as unchanged controls. Avoid unnecessary changes to already usable content.
 4. Use L04 and L05 to test semantic preservation. Where a safe change cannot be established, retain the original and report `skipped` or `needs_review`. A safe skip is not a claim that the reader's accessibility need has been solved.
 5. Have readers with the relevant colour-vision deficiency attempt the tasks before claiming usability improvements. Record errors and assistance needed; simulation alone is only triage.
+6. For L08-L11, preserve category identity, ratio references and the financial chart's numerical meaning. Assess chart reading, not simulated trading returns. L11's labelled examples provide a check against assigning candle direction from hue alone.
 
 No correction run or participant evaluation has been performed for this set. The manifest is a manual-test catalogue, not an automated benchmark. To restore downloads on another machine, fetch the recorded publisher URLs and verify their hashes before reusing the page annotations; publisher URLs may later serve different editions. Public availability does not establish permission to redistribute or modify every source.
