@@ -4,7 +4,15 @@ Collected and inspected on 25 October 2026. This set contains **ten education PD
 
 The [manifest](manifest.json) records publisher URLs, original-file SHA-256 hashes, page counts, selected pages, reader tasks and preservation requirements. Paths in the manifest are relative to the repository root. Downloaded originals and previews are under the Git-ignored [`output/pdf/everyday-learning/`](../../../../output/pdf/everyday-learning/) directory. They remain separate, unmodified PDFs; third-party material is not included in this commit or covered by this repository's MIT licence.
 
-## Suggested starting order
+## Selected top three
+
+1. **L08 - Visual Encoding, PDF page 57:** the clearest first test of identifying categories through a scatterplot legend when small coloured marks overlap.
+2. **L11 - Technical Analysis, PDF page 163:** a practical finance task involving red/green candles and indicator identities. Use PDF page 162 for the indicator legend.
+3. **L09 - Color, PDF page 49:** a harder diverging-heatmap task that must preserve the **1:1** ratio reference and both directions. Test visible cells only; the source figure is clipped at the bottom.
+
+This first batch covers categorical, financial direction and diverging-scale reading. The ranking is based on the inspected original/protanopia pairs, not participant results.
+
+## Source catalogue
 
 All page references below are **1-based PDF pages**. Open the original PDFs at a readable zoom; the [comparison overview](../../../../output/pdf/everyday-learning/original-vs-protanopia.png) is for triage. Full-size original and simulated page renders are in [`previews/`](../../../../output/pdf/everyday-learning/previews/).
 
@@ -44,7 +52,7 @@ These are **candidate accessibility problems inferred from source inspection and
 
 ## How to test a correction
 
-1. Start with L01 and L02, where colour represents graph or map data. Record the reader's answer to the manifest task and whether they can follow the intended curve or category. Use full-size pages, consistent zoom and the same task before and after.
+1. For the selected first batch, use L08, L11 and L09 in that order. L01 and L02 remain useful graph/map follow-ups. Record the reader's answer to the manifest task and whether they can follow the intended mark, line or category. Use full-size pages, consistent zoom and the same task before and after.
 2. Compare original, original simulation, candidate and candidate simulation. Check task answers and legend/diagram consistency, as well as text, geometry, links and page preservation. A more colourful result alone is not a pass.
 3. Use L03 page 27 and L06's labelled table as unchanged controls. Avoid unnecessary changes to already usable content.
 4. Use L04 and L05 to test semantic preservation. Where a safe change cannot be established, retain the original and report `skipped` or `needs_review`. A safe skip is not a claim that the reader's accessibility need has been solved.

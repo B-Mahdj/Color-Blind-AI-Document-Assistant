@@ -4,6 +4,7 @@
   "page_numbering": "1-based PDF pages",
   "path_base": "repository root",
   "scope": "Manual test catalogue; 10 education documents and 1 transport document, including 2 data visualisation courses and 2 finance learning resources",
+  "selected_first_batch": ["L08", "L11", "L09"],
   "simulation": {
     "helper": "colorblind_assistant.colors.simulated_image",
     "model": "DaltonLens Simulator_Vienot1999",
@@ -285,7 +286,7 @@
         15
       ],
       "reader_task": "Distinguish rising and falling candles, then use the component legend on PDF page 162 to match the three lower indicator lines to their right-edge badges on page 163.",
-      "reference_answer": "The setup identifies +DI as green, ADX as black and -DI as red. At the right edge of the displayed panel, +DI is highest, ADX is in the middle and -DI is lowest. Candle anatomy can be checked with the labelled numerical examples on page 15.",
+      "reference_answer": "The setup identifies +DI as green, ADX as black and -DI as red. At the right edge of the displayed panel, ADX is highest (51.28), +DI is in the middle (37.53) and -DI is lowest (12.41). Candle anatomy can be checked with the labelled numerical examples on page 15.",
       "colour_risk": "Red/green candles and indicator lines lose hue separation in the protanopia preview. This book uses different candle palettes in different chapters.",
       "preservation_requirement": "Keep open/high/low/close semantics, candle bodies and wicks, time and price axes, indicator names and displayed values intact. Any remapping must agree with the page-specific component legend and surrounding colour words. PDF page 163 is printed page 162.",
       "test_role": "finance learning: candle direction and indicator identity",
