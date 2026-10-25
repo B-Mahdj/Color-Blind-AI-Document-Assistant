@@ -4,7 +4,11 @@
   "page_numbering": "1-based PDF pages",
   "path_base": "repository root",
   "scope": "Manual test catalogue; 10 education documents and 1 transport document, including 2 data visualisation courses and 2 finance learning resources",
-  "selected_first_batch": ["L08", "L11", "L09"],
+  "selected_first_batch": [
+    "L08",
+    "L11",
+    "L09"
+  ],
   "simulation": {
     "helper": "colorblind_assistant.colors.simulated_image",
     "model": "DaltonLens Simulator_Vienot1999",
@@ -216,7 +220,20 @@
       "original_preview": "output/pdf/everyday-learning/previews/L08-original.png",
       "protanopia_preview": "output/pdf/everyday-learning/previews/L08-protanopia.png",
       "inspection_status": "primary original and protanopia preview visually reviewed",
-      "source_notes": "pypdf reports recoverable cross-reference warnings; selected pages render successfully. The source PDF has not been repaired or rewritten."
+      "source_notes": "pypdf reports recoverable cross-reference warnings; selected pages render successfully. The source PDF has not been repaired or rewritten.",
+      "excerpt": {
+        "local_path": "output/pdf/everyday-learning/excerpts/UW_Visual_Encoding_PDF_55-60.pdf",
+        "source_pdf_pages": [
+          55,
+          60
+        ],
+        "page_count": 6,
+        "primary_excerpt_page": 3,
+        "bytes": 643061,
+        "sha256": "8b9ae7945a9588d778b74e450d8de2d3b2b5797363915aabfcaf4a6b9364d1ed",
+        "preview_path": "output/pdf/everyday-learning/excerpts/L08-excerpt-overview.png",
+        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json"
+      }
     },
     {
       "id": "L09",
@@ -243,7 +260,20 @@
       "original_preview": "output/pdf/everyday-learning/previews/L09-original.png",
       "protanopia_preview": "output/pdf/everyday-learning/previews/L09-protanopia.png",
       "inspection_status": "primary original and protanopia preview visually reviewed",
-      "source_notes": "pypdf reports recoverable cross-reference warnings; selected pages render successfully. The source PDF has not been repaired or rewritten."
+      "source_notes": "pypdf reports recoverable cross-reference warnings; selected pages render successfully. The source PDF has not been repaired or rewritten.",
+      "excerpt": {
+        "local_path": "output/pdf/everyday-learning/excerpts/UW_Color_PDF_47-51.pdf",
+        "source_pdf_pages": [
+          47,
+          51
+        ],
+        "page_count": 5,
+        "primary_excerpt_page": 3,
+        "bytes": 1069966,
+        "sha256": "3706210981caebaff89c9e7e65b3914ce901f9d2e07ca62426304b51c63c2397",
+        "preview_path": "output/pdf/everyday-learning/excerpts/L09-excerpt-overview.png",
+        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json"
+      }
     },
     {
       "id": "L10",
@@ -297,7 +327,20 @@
       "pdf_page_count": 177,
       "original_preview": "output/pdf/everyday-learning/previews/L11-original.png",
       "protanopia_preview": "output/pdf/everyday-learning/previews/L11-protanopia.png",
-      "inspection_status": "primary original and protanopia preview visually reviewed"
+      "inspection_status": "primary original and protanopia preview visually reviewed",
+      "excerpt": {
+        "local_path": "output/pdf/everyday-learning/excerpts/Zerodha_Technical_Analysis_PDF_161-165.pdf",
+        "source_pdf_pages": [
+          161,
+          165
+        ],
+        "page_count": 5,
+        "primary_excerpt_page": 3,
+        "bytes": 275531,
+        "sha256": "43f02dc0c69ee8765dd38da5bf3853a322afabfa16df2c6331e992bfe495b8d2",
+        "preview_path": "output/pdf/everyday-learning/excerpts/L11-excerpt-overview.png",
+        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json"
+      }
     }
   ]
 }

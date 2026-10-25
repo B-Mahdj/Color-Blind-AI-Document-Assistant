@@ -12,6 +12,18 @@ The [manifest](manifest.json) records publisher URLs, original-file SHA-256 hash
 
 This first batch covers categorical, financial direction and diverging-scale reading. The ranking is based on the inspected original/protanopia pairs, not participant results.
 
+## Short excerpts ready to test
+
+The main test chart is **page 3 in each excerpt**. Ranges below use original, 1-based PDF page numbers and include both endpoints. Visual Encoding pages 55-60 make six pages; the other two excerpts contain five pages each.
+
+| Case | Short PDF | Original PDF pages | Excerpt pages |
+| --- | --- | --- | --- |
+| L08 | [UW Visual Encoding](../../../../output/pdf/everyday-learning/excerpts/UW_Visual_Encoding_PDF_55-60.pdf) | 55-60 | 6 |
+| L11 | [Zerodha Technical Analysis](../../../../output/pdf/everyday-learning/excerpts/Zerodha_Technical_Analysis_PDF_161-165.pdf) | 161-165 | 5 |
+| L09 | [UW Color](../../../../output/pdf/everyday-learning/excerpts/UW_Color_PDF_47-51.pdf) | 47-51 | 5 |
+
+The excerpts retain native PDF content, selectable text and source colours. All 16 pages were checked against their originals: content streams, text, page boxes, rotation, link annotations and rendered pixels match. The original files' hashes are unchanged. [Verification evidence](../../../../output/pdf/everyday-learning/excerpts/excerpt-verification.json) records each page mapping and output hash. The existing source crop on the heatmap remains.
+
 ## Source catalogue
 
 All page references below are **1-based PDF pages**. Open the original PDFs at a readable zoom; the [comparison overview](../../../../output/pdf/everyday-learning/original-vs-protanopia.png) is for triage. Full-size original and simulated page renders are in [`previews/`](../../../../output/pdf/everyday-learning/previews/).
