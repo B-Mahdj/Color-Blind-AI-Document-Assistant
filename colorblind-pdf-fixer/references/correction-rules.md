@@ -1,6 +1,6 @@
 # Correction rules for protanopia
 
-Use the original figure and its DaltonLens protanopia simulation together. The simulation is a visual aid, not proof that a person with protanopia will see the exact same result. Base every correction on the chart's labels, legend, values, and visible relationships; color similarity by itself does not establish meaning.
+Use the original figure and its DaltonLens protanopia simulation together. The simulation is a likely visualisation of what a person with protanopia will see. Base every correction on the chart's labels, legend, values, and visible relationships; color similarity by itself does not establish meaning. ALWAYS keep the image original intent.
 
 ## Recoloring
 
@@ -19,4 +19,22 @@ Use the original figure and its DaltonLens protanopia simulation together. The s
 
 ## Uncertain or unsupported figures
 
-Leave a category unchanged when its association or boundary is uncertain. Do not infer a category from color alone. Do not apply hatching or line styles to a raster region unless the implementation provides a reliable mask or path. Record what could not be safely changed so the user can review it.
+Leave a category unchanged when its association or boundary is uncertain. Do not infer a category from color alone. Do not apply hatching or line styles to a raster region unless the implementation provides a reliable mask or path. Record what could not be safely changed.
+
+# For charts  
+
+## For category charts (bar, pie, column, etc.)
+
+- Use a lot hatching and recoloring as they will give the best results. 
+
+## Worked example: categorical bar chart
+
+The paired example in `../assets/examples/` shows the original chart and a supported correction. Categories are established by the legend; the correction applies each color consistently to its bars and legend swatch, then adds hatching as a non-color cue. Keep the values and category meanings unchanged. Treat this as an example, not a fixed palette for other charts.
+
+| Original | Corrected example |
+| --- | --- |
+| ![Original bar chart with red, green, and orange category fills](../assets/examples/bar-chart-before.png) | ![Corrected bar chart with consistent blue, orange, and purple fills, with hatching on two categories](../assets/examples/bar-chart-after.png) |
+
+## For timeseries charts (line, etc.)
+
+- Use more lines related changes : making the lines dashed, dotted, and dash-dot. 
