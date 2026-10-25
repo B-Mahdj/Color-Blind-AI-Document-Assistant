@@ -16,7 +16,7 @@
     "severity": 1.0
   },
   "limitations": [
-    "No correction runs or participant evaluations performed.",
+    "The three selected short excerpts have been processed with vision-reviewed corrections; no participant evaluations performed.",
     "Simulation findings are candidate issues, not measured human usability outcomes.",
     "Publisher URLs can change; verify SHA-256 before reusing page annotations.",
     "Third-party originals and generated previews remain Git-ignored local files; no redistribution licence is inferred."
@@ -232,7 +232,22 @@
         "bytes": 643061,
         "sha256": "8b9ae7945a9588d778b74e450d8de2d3b2b5797363915aabfcaf4a6b9364d1ed",
         "preview_path": "output/pdf/everyday-learning/excerpts/L08-excerpt-overview.png",
-        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json"
+        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json",
+        "skill_run": {
+          "date": "2026-10-25",
+          "status": "processed_with_limits",
+          "output_path": "output/pdf/everyday-learning/skill-run-2026-10-25/improved/UW_Visual_Encoding_PDF_55-60_improved.pdf",
+          "output_sha256": "707f2cfd1c3763fafc8809414813e11ba8e5df98c6be88d9d22f71e513e81a0b",
+          "changed_pages": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "changed_image_count": 4,
+          "verification": "skill verifier and additional preservation checks passed",
+          "report_path": "cli/tests/fixtures/real_documents/skill_runs/2026-10-25.md"
+        }
       }
     },
     {
@@ -272,7 +287,19 @@
         "bytes": 1069966,
         "sha256": "3706210981caebaff89c9e7e65b3914ce901f9d2e07ca62426304b51c63c2397",
         "preview_path": "output/pdf/everyday-learning/excerpts/L09-excerpt-overview.png",
-        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json"
+        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json",
+        "skill_run": {
+          "date": "2026-10-25",
+          "status": "processed_with_limits",
+          "output_path": "output/pdf/everyday-learning/skill-run-2026-10-25/improved/UW_Color_PDF_47-51_improved.pdf",
+          "output_sha256": "6b8841da6b41defc0b8edaf43bc066d818cafdda8f176a277618263836b17cf3",
+          "changed_pages": [
+            3
+          ],
+          "changed_image_count": 1,
+          "verification": "skill verifier and additional preservation checks passed",
+          "report_path": "cli/tests/fixtures/real_documents/skill_runs/2026-10-25.md"
+        }
       }
     },
     {
@@ -339,7 +366,22 @@
         "bytes": 275531,
         "sha256": "43f02dc0c69ee8765dd38da5bf3853a322afabfa16df2c6331e992bfe495b8d2",
         "preview_path": "output/pdf/everyday-learning/excerpts/L11-excerpt-overview.png",
-        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json"
+        "verification_path": "output/pdf/everyday-learning/excerpts/excerpt-verification.json",
+        "skill_run": {
+          "date": "2026-10-25",
+          "status": "processed_with_limits",
+          "output_path": "output/pdf/everyday-learning/skill-run-2026-10-25/improved/Zerodha_Technical_Analysis_PDF_161-165_improved.pdf",
+          "output_sha256": "746058467d413bca11621577b982a06c82cf7813cf8d8c22c72211b6bbc8f9ed",
+          "changed_pages": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "changed_image_count": 4,
+          "verification": "skill verifier and additional preservation checks passed",
+          "report_path": "cli/tests/fixtures/real_documents/skill_runs/2026-10-25.md"
+        }
       }
     }
   ]

@@ -24,6 +24,10 @@ The main test chart is **page 3 in each excerpt**. Ranges below use original, 1-
 
 The excerpts retain native PDF content, selectable text and source colours. All 16 pages were checked against their originals: content streams, text, page boxes, rotation, link annotations and rendered pixels match. The original files' hashes are unchanged. [Verification evidence](../../../../output/pdf/everyday-learning/excerpts/excerpt-verification.json) records each page mapping and output hash. The existing source crop on the heatmap remains.
 
+## Skill-processed versions
+
+The selected short excerpts were processed with `colorblind-pdf-fixer` on 25 October 2026. [Download the three corrected PDFs and read the change/skip report](skill_runs/2026-10-25.md). Nine figures were recolored across the 16 pages; all three outputs passed the skill verifier and additional preservation checks. [Compare original and corrected protanopia previews](../../../../output/pdf/everyday-learning/skill-run-2026-10-25/before-after-protanopia.png). These candidates still need reader testing, including the unchanged teaching examples and ambiguous annotations identified in the report.
+
 ## Source catalogue
 
 All page references below are **1-based PDF pages**. Open the original PDFs at a readable zoom; the [comparison overview](../../../../output/pdf/everyday-learning/original-vs-protanopia.png) is for triage. Full-size original and simulated page renders are in [`previews/`](../../../../output/pdf/everyday-learning/previews/).
@@ -71,4 +75,4 @@ These are **candidate accessibility problems inferred from source inspection and
 5. Have readers with the relevant colour-vision deficiency attempt the tasks before claiming usability improvements. Record errors and assistance needed; simulation alone is only triage.
 6. For L08-L11, preserve category identity, ratio references and the financial chart's numerical meaning. Assess chart reading, not simulated trading returns. L11's labelled examples provide a check against assigning candle direction from hue alone.
 
-No correction run or participant evaluation has been performed for this set. The manifest is a manual-test catalogue, not an automated benchmark. To restore downloads on another machine, fetch the recorded publisher URLs and verify their hashes before reusing the page annotations; publisher URLs may later serve different editions. Public availability does not establish permission to redistribute or modify every source.
+A correction run has been completed for the three selected short excerpts; participant evaluation remains outstanding. The manifest is a manual-test catalogue, not an automated benchmark. To restore downloads on another machine, fetch the recorded publisher URLs and verify their hashes before reusing the page annotations; publisher URLs may later serve different editions. Public availability does not establish permission to redistribute or modify every source.
